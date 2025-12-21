@@ -1,0 +1,189 @@
+{
+  "description": "高级配置示例 - 展示各种配置选项的用法",
+  "configs": {
+    "激进模式": {
+      "description": "快速删除大量内容（风险较高）",
+      "config": {
+        "deleteOptions": {
+          "tweets": true,
+          "retweets": true,
+          "replies": true,
+          "likes": false
+        },
+        "executionConfig": {
+          "maxDeletePerSession": 500,
+          "deletePerBatch": 10,
+          "delayBetweenActions": 1000,
+          "delayBetweenBatches": 2000,
+          "pageRefreshDelay": 3000
+        },
+        "retryConfig": {
+          "maxRetries": 2,
+          "retryDelay": 3000,
+          "exponentialBackoff": false
+        }
+      }
+    },
+    "保守模式": {
+      "description": "稳定可靠，适合重要账号",
+      "config": {
+        "deleteOptions": {
+          "tweets": true,
+          "retweets": true,
+          "replies": true,
+          "likes": false
+        },
+        "executionConfig": {
+          "maxDeletePerSession": 50,
+          "deletePerBatch": 3,
+          "delayBetweenActions": 3000,
+          "delayBetweenBatches": 5000,
+          "pageRefreshDelay": 8000
+        },
+        "retryConfig": {
+          "maxRetries": 5,
+          "retryDelay": 10000,
+          "exponentialBackoff": true
+        }
+      }
+    },
+    "测试模式": {
+      "description": "用于测试选择器是否正确",
+      "config": {
+        "deleteOptions": {
+          "tweets": true,
+          "retweets": false,
+          "replies": false,
+          "likes": false
+        },
+        "executionConfig": {
+          "maxDeletePerSession": 5,
+          "deletePerBatch": 1,
+          "delayBetweenActions": 5000,
+          "delayBetweenBatches": 5000,
+          "pageRefreshDelay": 5000
+        },
+        "retryConfig": {
+          "maxRetries": 3,
+          "retryDelay": 5000,
+          "exponentialBackoff": true
+        }
+      }
+    },
+    "只删除转推": {
+      "description": "只取消转推，保留原创推文",
+      "config": {
+        "deleteOptions": {
+          "tweets": false,
+          "retweets": true,
+          "replies": false,
+          "likes": false
+        },
+        "executionConfig": {
+          "maxDeletePerSession": 200,
+          "deletePerBatch": 5,
+          "delayBetweenActions": 2000,
+          "delayBetweenBatches": 3000,
+          "pageRefreshDelay": 5000
+        },
+        "retryConfig": {
+          "maxRetries": 3,
+          "retryDelay": 5000,
+          "exponentialBackoff": true
+        }
+      }
+    },
+    "只删除回复": {
+      "description": "只删除回复，保留推文和转推",
+      "config": {
+        "deleteOptions": {
+          "tweets": false,
+          "retweets": false,
+          "replies": true,
+          "likes": false
+        },
+        "executionConfig": {
+          "maxDeletePerSession": 100,
+          "deletePerBatch": 5,
+          "delayBetweenActions": 2000,
+          "delayBetweenBatches": 3000,
+          "pageRefreshDelay": 5000
+        },
+        "retryConfig": {
+          "maxRetries": 3,
+          "retryDelay": 5000,
+          "exponentialBackoff": true
+        }
+      }
+    },
+    "平衡模式": {
+      "description": "速度和安全的平衡（推荐）",
+      "config": {
+        "deleteOptions": {
+          "tweets": true,
+          "retweets": true,
+          "replies": true,
+          "likes": false
+        },
+        "executionConfig": {
+          "maxDeletePerSession": 100,
+          "deletePerBatch": 5,
+          "delayBetweenActions": 2000,
+          "delayBetweenBatches": 3000,
+          "pageRefreshDelay": 5000
+        },
+        "retryConfig": {
+          "maxRetries": 3,
+          "retryDelay": 5000,
+          "exponentialBackoff": true
+        }
+      }
+    }
+  },
+  "选择器更新示例": {
+    "description": "如果 Twitter 更新页面结构，可能需要更新这些选择器",
+    "selectors": {
+      "tweetMoreButton": "[aria-label*='更多'][role='button'], [data-testid='caret']",
+      "deleteButton": "[role='menuitem'][data-testid*='delete'], [role='menuitem']:has-text('删除')",
+      "confirmDeleteButton": "[data-testid='confirmationSheetConfirm']",
+      "tweet": "[data-testid='tweet']",
+      "unretweet": "[data-testid='unretweet']",
+      "unretweetConfirm": "[data-testid='unretweetConfirm']"
+    }
+  },
+  "使用说明": [
+    "1. 根据需求选择合适的配置模式",
+    "2. 复制对应的 config 内容到项目根目录的 config.json",
+    "3. 如有需要，可以在此基础上微调参数",
+    "4. 测试模式适合首次使用，验证功能正常",
+    "5. 激进模式可能触发 Twitter 限制，请谨慎使用"
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

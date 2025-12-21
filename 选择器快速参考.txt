@@ -1,0 +1,8 @@
+选择器快速修复步骤
+====================
+
+1) 打开 Twitter 页面，按 F12 打开开发者工具
+2) 选中目标元素，复制合适的 CSS 选择器
+3) 更新 selectors.json 的 primary / fallback
+4) 运行 npm run test:selectors 验证格式
+5) 重新启动程序验证效果
