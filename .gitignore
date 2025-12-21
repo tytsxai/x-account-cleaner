@@ -1,0 +1,61 @@
+# 依赖
+node_modules/
+dist/
+
+# 环境变量
+.env
+
+# 日志
+logs/
+*.log
+
+# 浏览器数据
+browser-data/
+user-data/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# 临时文件
+*.tmp
+*.temp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
