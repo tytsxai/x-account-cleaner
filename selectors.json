@@ -1,0 +1,173 @@
+{
+    "version": "1.0.0",
+    "lastUpdated": "2025-10-05",
+    "description": "Twitter 页面元素选择器配置文件 - 当 Twitter 更新页面结构时，只需修改此文件即可",
+    "tips": {
+        "howToUpdate": "如果功能失效，请使用浏览器开发者工具（F12）检查元素，找到新的选择器并更新此文件",
+        "testingTools": "推荐使用 Chrome DevTools 的 Console 面板，使用 document.querySelector() 测试选择器是否有效",
+        "fallbackSelectors": "支持多个备用选择器，用逗号分隔，程序会依次尝试"
+    },
+    "selectors": {
+        "tweet": {
+            "primary": "[data-testid='tweet']",
+            "fallback": "article[role='article']",
+            "description": "推文容器元素"
+        },
+        "tweetMoreButton": {
+            "primary": "[aria-label*='更多'][role='button']",
+            "fallback": "[data-testid='caret']",
+            "description": "推文的更多操作按钮（三个点图标）"
+        },
+        "deleteButton": {
+            "primary": "[role='menuitem'][data-testid*='delete']",
+            "fallback": "[role='menuitem']:has-text('删除')",
+            "description": "下拉菜单中的删除按钮"
+        },
+        "confirmDeleteButton": {
+            "primary": "[data-testid='confirmationSheetConfirm']",
+            "fallback": "[data-testid*='confirm']",
+            "description": "确认删除的对话框按钮"
+        },
+        "unretweet": {
+            "primary": "[data-testid='unretweet']",
+            "fallback": "[aria-label*='撤销转推']",
+            "description": "取消转推按钮"
+        },
+        "unretweetConfirm": {
+            "primary": "[data-testid='unretweetConfirm']",
+            "fallback": "[data-testid='confirmationSheetConfirm']",
+            "description": "确认取消转推按钮"
+        },
+        "likeButton": {
+            "primary": "[data-testid='like']",
+            "fallback": "[aria-label*='喜欢']",
+            "description": "点赞按钮"
+        },
+        "unlikeButton": {
+            "primary": "[data-testid='unlike']",
+            "fallback": "[aria-label*='取消喜欢']",
+            "description": "取消点赞按钮"
+        },
+        "bookmarkButton": {
+            "primary": "[data-testid='bookmark']",
+            "fallback": "[aria-label*='书签']",
+            "description": "添加书签按钮"
+        },
+        "removeBookmarkButton": {
+            "primary": "[data-testid='removeBookmark']",
+            "fallback": "[aria-label*='移除书签']",
+            "description": "移除书签按钮"
+        },
+        "followingButton": {
+            "primary": "[data-testid*='following']",
+            "fallback": "[aria-label*='正在关注']",
+            "description": "正在关注按钮"
+        },
+        "unfollowButton": {
+            "primary": "[data-testid*='unfollow']",
+            "fallback": "[aria-label*='取消关注']",
+            "description": "取消关注按钮"
+        },
+        "unfollowConfirm": {
+            "primary": "[data-testid='confirmationSheetConfirm']",
+            "fallback": "[role='button']:has-text('取消关注')",
+            "description": "确认取消关注按钮"
+        },
+        "userCell": {
+            "primary": "[data-testid='UserCell']",
+            "fallback": "[data-testid*='user-cell']",
+            "description": "关注列表中的用户卡片"
+        },
+        "loginUsernameInput": {
+            "primary": "input[name='text']",
+            "fallback": "input[autocomplete='username']",
+            "description": "登录页面的用户名输入框"
+        },
+        "loginPasswordInput": {
+            "primary": "input[name='password']",
+            "fallback": "input[type='password']",
+            "description": "登录页面的密码输入框"
+        },
+        "loginNextButton": {
+            "primary": "[role='button']:has-text('下一步')",
+            "fallback": "button:has-text('Next')",
+            "description": "登录流程的下一步按钮"
+        },
+        "loginButton": {
+            "primary": "[role='button'][data-testid='LoginForm_Login_Button']",
+            "fallback": "button:has-text('登录')",
+            "description": "登录按钮"
+        },
+        "profileLink": {
+            "primary": "a[data-testid='AppTabBar_Profile_Link']",
+            "fallback": "a[href*='/home']",
+            "description": "导航栏的个人资料链接"
+        }
+    },
+    "customSelectors": {},
+    "meta": {
+        "customSelectorsGuide": {
+            "description": "你可以在 customSelectors 中添加自定义选择器，格式与 selectors 相同",
+            "example": {
+                "primary": "[data-testid='example']",
+                "fallback": ".example-class",
+                "description": "这是一个示例"
+            }
+        }
+    },
+    "selectorPatterns": {
+        "description": "常用的选择器模式参考",
+        "patterns": [
+            {
+                "name": "data-testid",
+                "example": "[data-testid='tweet']",
+                "reliability": "高",
+                "note": "Twitter 官方测试 ID，相对稳定"
+            },
+            {
+                "name": "aria-label",
+                "example": "[aria-label='更多']",
+                "reliability": "中",
+                "note": "无障碍标签，可能随语言变化"
+            },
+            {
+                "name": "role",
+                "example": "[role='button']",
+                "reliability": "中",
+                "note": "HTML 角色属性，相对通用"
+            },
+            {
+                "name": "class",
+                "example": ".css-1dbjc4n",
+                "reliability": "低",
+                "note": "CSS 类名可能随时变化，不推荐"
+            },
+            {
+                "name": "text",
+                "example": ":has-text('删除')",
+                "reliability": "低",
+                "note": "依赖文本内容，受语言影响"
+            }
+        ]
+    },
+    "updateGuide": {
+        "steps": [
+            "1. 打开 Twitter 网站并登录",
+            "2. 按 F12 打开开发者工具",
+            "3. 点击左上角的元素选择工具（或按 Ctrl+Shift+C）",
+            "4. 点击你要操作的按钮或元素",
+            "5. 在 Elements 面板中查看元素的属性",
+            "6. 优先查找 data-testid 属性",
+            "7. 在 Console 面板测试选择器：document.querySelector('[data-testid=\"your-selector\"]')",
+            "8. 如果返回元素，说明选择器有效",
+            "9. 更新此文件中对应的选择器",
+            "10. 重新运行程序测试"
+        ],
+        "exampleScenarios": {
+            "推文删除按钮失效": "检查 tweetMoreButton 和 deleteButton 选择器",
+            "无法取消转推": "检查 unretweet 和 unretweetConfirm 选择器",
+            "点赞功能异常": "检查 unlikeButton 选择器",
+            "关注列表无法加载": "检查 userCell 和 followingButton 选择器"
+        }
+    }
+}

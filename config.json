@@ -1,0 +1,55 @@
+{
+  "deleteOptions": {
+    "tweets": true,
+    "retweets": true,
+    "replies": true,
+    "likes": false,
+    "bookmarks": false,
+    "following": false
+  },
+  "executionConfig": {
+    "maxDeletePerSession": 100,
+    "deletePerBatch": 6,
+    "delayBetweenActions": 1500,
+    "delayJitterMs": 500,
+    "delayBetweenBatches": 2500,
+    "pageRefreshDelay": 4000,
+    "refreshBatchInterval": 2
+  },
+  "retryConfig": {
+    "maxRetries": 3,
+    "retryDelay": 5000,
+    "exponentialBackoff": true
+  },
+  "selectors": {
+    "tweetMoreButton": "[aria-label*='更多'][role='button'], [data-testid='caret']",
+    "deleteButton": "[role='menuitem'][data-testid*='delete'], [role='menuitem']:has-text('删除')",
+    "confirmDeleteButton": "[data-testid='confirmationSheetConfirm']",
+    "tweet": "[data-testid='tweet']",
+    "unretweet": "[data-testid='unretweet']",
+    "unretweetConfirm": "[data-testid='unretweetConfirm']",
+    "likeButton": "[data-testid='like']",
+    "unlikeButton": "[data-testid='unlike']",
+    "bookmarkButton": "[data-testid='bookmark']",
+    "removeBookmarkButton": "[data-testid='removeBookmark']",
+    "followingButton": "[data-testid*='following']",
+    "unfollowButton": "[data-testid*='unfollow']",
+    "unfollowConfirm": "[data-testid='confirmationSheetConfirm']"
+  },
+  "urls": {
+    "login": "https://twitter.com/i/flow/login",
+    "profile": "https://twitter.com/home",
+    "tweets": "https://twitter.com/{username}",
+    "tweetsWithReplies": "https://twitter.com/{username}/with_replies",
+    "media": "https://twitter.com/{username}/media",
+    "likes": "https://twitter.com/{username}/likes",
+    "bookmarks": "https://twitter.com/i/bookmarks",
+    "following": "https://twitter.com/{username}/following"
+  }
+}
+
+
+
+
+
+

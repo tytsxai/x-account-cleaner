@@ -1,0 +1,77 @@
+{
+    "version": "1.0.0",
+    "lastUpdated": "2025-10-05",
+    "description": "选择器配置备份文件 - 如果 selectors.json 出问题，可以复制此文件内容恢复",
+    "selectors": {
+        "tweet": {
+            "primary": "[data-testid='tweet']",
+            "fallback": "article[role='article']",
+            "description": "推文容器元素"
+        },
+        "tweetMoreButton": {
+            "primary": "[aria-label*='更多'][role='button']",
+            "fallback": "[data-testid='caret']",
+            "description": "推文的更多操作按钮（三个点图标）"
+        },
+        "deleteButton": {
+            "primary": "[role='menuitem'][data-testid*='delete']",
+            "fallback": "[role='menuitem']:has-text('删除')",
+            "description": "下拉菜单中的删除按钮"
+        },
+        "confirmDeleteButton": {
+            "primary": "[data-testid='confirmationSheetConfirm']",
+            "fallback": "[data-testid*='confirm']",
+            "description": "确认删除的对话框按钮"
+        },
+        "unretweet": {
+            "primary": "[data-testid='unretweet']",
+            "fallback": "[aria-label*='撤销转推']",
+            "description": "取消转推按钮"
+        },
+        "unretweetConfirm": {
+            "primary": "[data-testid='unretweetConfirm']",
+            "fallback": "[data-testid='confirmationSheetConfirm']",
+            "description": "确认取消转推按钮"
+        },
+        "likeButton": {
+            "primary": "[data-testid='like']",
+            "fallback": "[aria-label*='喜欢']",
+            "description": "点赞按钮"
+        },
+        "unlikeButton": {
+            "primary": "[data-testid='unlike']",
+            "fallback": "[aria-label*='取消喜欢']",
+            "description": "取消点赞按钮"
+        },
+        "bookmarkButton": {
+            "primary": "[data-testid='bookmark']",
+            "fallback": "[aria-label*='书签']",
+            "description": "添加书签按钮"
+        },
+        "removeBookmarkButton": {
+            "primary": "[data-testid='removeBookmark']",
+            "fallback": "[aria-label*='移除书签']",
+            "description": "移除书签按钮"
+        },
+        "followingButton": {
+            "primary": "[data-testid*='following']",
+            "fallback": "[aria-label*='正在关注']",
+            "description": "正在关注按钮"
+        },
+        "unfollowButton": {
+            "primary": "[data-testid*='unfollow']",
+            "fallback": "[aria-label*='取消关注']",
+            "description": "取消关注按钮"
+        },
+        "unfollowConfirm": {
+            "primary": "[data-testid='confirmationSheetConfirm']",
+            "fallback": "[role='button']:has-text('取消关注')",
+            "description": "确认取消关注按钮"
+        },
+        "userCell": {
+            "primary": "[data-testid='UserCell']",
+            "fallback": "[data-testid*='user-cell']",
+            "description": "关注列表中的用户卡片"
+        }
+    }
+}
