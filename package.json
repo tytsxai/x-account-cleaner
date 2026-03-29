@@ -41,11 +41,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.54.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
+    "minimatch": "^3.1.5",
     "prettier": "^3.1.0",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.1",
@@ -54,5 +55,13 @@
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "overrides": {
+    "ajv": "^6.14.0",
+    "diff": "^4.0.4",
+    "flatted": "^3.4.2",
+    "glob": "^10.5.0",
+    "js-yaml": "^4.1.1",
+    "picomatch": "^2.3.2"
   }
 }
