@@ -1,4 +1,5 @@
 import { log } from './logger';
+import { isCancellationError, throwIfCancellationRequested } from './cancellation';
 
 export interface RetryOptions {
   /**
@@ -54,6 +55,10 @@ export async function withRetry<T>(
     try {
       return await fn();
     } catch (error) {
+      if (isCancellationError(error)) {
+        throw error;
+      }
+
       // 分类重试检查
       if (retryOn && !retryOn(error)) {
         throw error;
@@ -123,7 +128,29 @@ export async function withRetry<T>(
  * @param ms 毫秒数
  */
 export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve, reject) => {
+    const timeoutMs = Math.max(0, Math.floor(ms));
+    const deadline = Date.now() + timeoutMs;
+
+    const tick = () => {
+      try {
+        throwIfCancellationRequested();
+      } catch (error) {
+        reject(error);
+        return;
+      }
+
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        resolve();
+        return;
+      }
+
+      setTimeout(tick, Math.min(remaining, 200));
+    };
+
+    tick();
+  });
 }
 
 /**

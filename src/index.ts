@@ -6,6 +6,8 @@ import { TwitterDeleter } from './core/deleter';
 import { getEnvConfig, loadConfig, validateConfig } from './config/config';
 import { initLogger, log } from './utils/logger';
 import { acquireRunLock, RunLock } from './utils/run-lock';
+import { isCancellationError, requestCancellation } from './utils/cancellation';
+import { sleep } from './utils/retry';
 import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -201,6 +203,7 @@ async function shutdown(
     return;
   }
   shutdownInProgress = true;
+  requestCancellation(message);
 
   if (message) {
     if (exitCode === 0) {
@@ -290,7 +293,7 @@ async function main() {
     if (!username) {
       log.warn('无法自动获取用户名，请在浏览器中导航到你的个人主页');
       log.info('等待 10 秒...');
-      await new Promise((resolve) => setTimeout(resolve, 10000));
+      await sleep(10000);
       username = await loginManager.getUsername();
     }
 
@@ -324,7 +327,7 @@ async function main() {
     // 倒计时
     for (let i = 10; i > 0; i--) {
       process.stdout.write(`\r${chalk.yellow(`倒计时: ${i} 秒...`)}  `);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await sleep(1000);
     }
     console.log('');
 
@@ -360,8 +363,17 @@ async function main() {
     // 等待用户查看
     log.info('');
     log.info('浏览器将在 10 秒后关闭...');
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await sleep(10000);
   } catch (error) {
+    if (isCancellationError(error)) {
+      if (!shutdownInProgress) {
+        runContext.status = 'cancelled';
+        runContext.error = formatError(error);
+        process.exitCode = 130;
+      }
+      return;
+    }
+
     log.error('程序执行出错:', error);
     runContext.status = 'failed';
     runContext.error = formatError(error);
@@ -414,5 +426,8 @@ process.on('SIGTERM', () => {
 
 // 启动程序
 void main().catch((error) => {
+  if (isCancellationError(error)) {
+    return;
+  }
   void shutdown(1, '启动失败:', error);
 });

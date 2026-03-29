@@ -177,6 +177,7 @@ export class SelectorHelper {
     try {
       const moreButton = await tweetElement.$(this.selectors.tweetMoreButton);
       if (moreButton) {
+        await moreButton.waitForElementState('visible', { timeout: 3000 });
         await moreButton.click();
         await this.page.waitForTimeout(500);
         return true;
@@ -196,7 +197,10 @@ export class SelectorHelper {
       // 等待菜单出现
       await this.page.waitForTimeout(500);
 
-      const deleteButton = await this.page.$(this.selectors.deleteButton);
+      const deleteButton = await this.page.waitForSelector(this.selectors.deleteButton, {
+        timeout: 3000,
+        state: 'visible',
+      });
       if (deleteButton) {
         await deleteButton.click();
         await this.page.waitForTimeout(500);
@@ -214,7 +218,10 @@ export class SelectorHelper {
    */
   async confirmDelete(): Promise<boolean> {
     try {
-      const confirmButton = await this.page.$(this.selectors.confirmDeleteButton);
+      const confirmButton = await this.page.waitForSelector(this.selectors.confirmDeleteButton, {
+        timeout: 3000,
+        state: 'visible',
+      });
       if (confirmButton) {
         await confirmButton.click();
         await this.page.waitForTimeout(1000);
@@ -235,10 +242,14 @@ export class SelectorHelper {
     try {
       const unretweetButton = await tweetElement.$(this.selectors.unretweet);
       if (unretweetButton) {
+        await unretweetButton.waitForElementState('visible', { timeout: 3000 });
         await unretweetButton.click();
         await this.page.waitForTimeout(500);
 
-        const confirmButton = await this.page.$(this.selectors.unretweetConfirm);
+        const confirmButton = await this.page.waitForSelector(this.selectors.unretweetConfirm, {
+          timeout: 3000,
+          state: 'visible',
+        });
         if (confirmButton) {
           await confirmButton.click();
           await this.page.waitForTimeout(1000);
@@ -280,6 +291,7 @@ export class SelectorHelper {
     try {
       const unlikeButton = await tweetElement.$(this.selectors.unlikeButton);
       if (unlikeButton) {
+        await unlikeButton.waitForElementState('visible', { timeout: 3000 });
         await unlikeButton.click();
         await this.page.waitForTimeout(500);
         return true;
@@ -302,11 +314,15 @@ export class SelectorHelper {
       if (!moreButton) {
         return false;
       }
+      await moreButton.waitForElementState('visible', { timeout: 3000 });
       await moreButton.click();
       await this.page.waitForTimeout(500);
 
       // 点击删除书签按钮
-      const removeButton = await this.page.$(this.selectors.removeBookmarkButton);
+      const removeButton = await this.page.waitForSelector(this.selectors.removeBookmarkButton, {
+        timeout: 3000,
+        state: 'visible',
+      });
       if (removeButton) {
         await removeButton.click();
         await this.page.waitForTimeout(500);
@@ -347,15 +363,20 @@ export class SelectorHelper {
         if (!unfollowBtn) {
           return false;
         }
+        await unfollowBtn.waitForElementState('visible', { timeout: 3000 });
         await unfollowBtn.click();
       } else {
+        await followingButton.waitForElementState('visible', { timeout: 3000 });
         await followingButton.click();
       }
 
       await this.page.waitForTimeout(500);
 
       // 确认取消关注
-      const confirmButton = await this.page.$(this.selectors.unfollowConfirm);
+      const confirmButton = await this.page.waitForSelector(this.selectors.unfollowConfirm, {
+        timeout: 3000,
+        state: 'visible',
+      });
       if (confirmButton) {
         await confirmButton.click();
         await this.page.waitForTimeout(1000);

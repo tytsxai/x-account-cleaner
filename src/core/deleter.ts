@@ -4,6 +4,7 @@ import { log } from '../utils/logger';
 import { sleep, randomSleep, withRetry } from '../utils/retry';
 import { SelectorHelper, TweetInfo, UserInfo } from '../utils/selector';
 import { getEnvConfig } from '../config/config';
+import { throwIfCancellationRequested } from '../utils/cancellation';
 import { Config, ContentType, DeleteStats } from '../types';
 
 /**
@@ -212,12 +213,70 @@ export class TwitterDeleter {
   }
 
   private async ensureSessionActive(context: string): Promise<void> {
+    throwIfCancellationRequested();
+
     const blocker = await this.getSessionBlocker(context);
     if (blocker) {
       await this.waitForSessionRecovery(context, blocker);
     }
 
     await this.detectBlockingState(context);
+  }
+
+  private buildTweetTargetKey(info: TweetInfo, index: number): string {
+    if (info.tweetId) {
+      return `tweet:${info.tweetId}`;
+    }
+
+    if (info.authorHandle || info.textPreview) {
+      return `tweet:${info.authorHandle || 'unknown'}:${info.textPreview || 'empty'}`;
+    }
+
+    return `tweet:index:${index}`;
+  }
+
+  private buildUserTargetKey(info: UserInfo, index: number): string {
+    if (info.handle) {
+      return `user:${info.handle}`;
+    }
+
+    if (info.displayName) {
+      return `user:name:${info.displayName}`;
+    }
+
+    return `user:index:${index}`;
+  }
+
+  private async getNextTweetCandidate(
+    skippedTargets: Set<string>
+  ): Promise<{ element: ElementHandle<Element>; info: TweetInfo; key: string } | null> {
+    const tweets = await this.selectorHelper.getTweets();
+
+    for (let i = 0; i < tweets.length; i++) {
+      const info = await this.selectorHelper.extractTweetInfo(tweets[i]);
+      const key = this.buildTweetTargetKey(info, i);
+      if (!skippedTargets.has(key)) {
+        return { element: tweets[i], info, key };
+      }
+    }
+
+    return null;
+  }
+
+  private async getNextUserCandidate(
+    skippedTargets: Set<string>
+  ): Promise<{ element: ElementHandle<Element>; info: UserInfo; key: string } | null> {
+    const users = await this.selectorHelper.getFollowingUsers();
+
+    for (let i = 0; i < users.length; i++) {
+      const info = await this.selectorHelper.extractUserInfo(users[i]);
+      const key = this.buildUserTargetKey(info, i);
+      if (!skippedTargets.has(key)) {
+        return { element: users[i], info, key };
+      }
+    }
+
+    return null;
   }
 
   private async detectBlockingState(context: string): Promise<void> {
@@ -266,6 +325,7 @@ export class TwitterDeleter {
     await this.ensureSessionActive(`${type} 初始化`);
 
     while (totalDeleted < executionConfig.maxDeletePerSession) {
+      throwIfCancellationRequested();
       await this.ensureSessionActive(`${type} 批次检查`);
       // 每批删除
       const deletedInBatch = await this.deleteBatch(type);
@@ -317,32 +377,36 @@ export class TwitterDeleter {
   private async deleteBatch(type: ContentType): Promise<number> {
     const { executionConfig } = this.config;
     let deleted = 0;
+    const attemptedTargets = new Set<string>();
 
     try {
       // 滚动到顶部
       await this.selectorHelper.scrollToTop();
       await sleep(1000);
 
-      // 获取推文列表
-      const tweets = await this.selectorHelper.getTweets();
-
-      if (tweets.length === 0) {
+      const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
+      if (!firstCandidate) {
         log.debug('未找到推文元素');
         return 0;
       }
 
-      log.debug(`找到 ${tweets.length} 条推文`);
+      attemptedTargets.add(firstCandidate.key);
+      log.debug('找到可处理的推文元素');
 
-      // 删除指定数量
-      const deleteCount = Math.min(executionConfig.deletePerBatch, tweets.length);
-
-      for (let i = 0; i < deleteCount; i++) {
+      for (let i = 0; i < executionConfig.deletePerBatch; i++) {
         try {
-          // 删除前记录推文信息
-          const tweetInfo = await this.selectorHelper.extractTweetInfo(tweets[i]);
-          this.logDeletionTarget(type, tweetInfo);
+          throwIfCancellationRequested();
 
-          const success = await this.deleteSingleTweet(tweets[i], type);
+          const candidate =
+            i === 0 ? firstCandidate : await this.getNextTweetCandidate(attemptedTargets);
+          if (!candidate) {
+            break;
+          }
+
+          attemptedTargets.add(candidate.key);
+          this.logDeletionTarget(type, candidate.info);
+
+          const success = await this.deleteSingleTweet(candidate.element, type);
 
           if (success) {
             deleted++;
@@ -415,29 +479,36 @@ export class TwitterDeleter {
     await this.ensureSessionActive('取消转推 初始化');
 
     while (totalUnretweeted < executionConfig.maxDeletePerSession) {
+      throwIfCancellationRequested();
       await this.ensureSessionActive('取消转推 批次检查');
       await this.selectorHelper.scrollToTop();
       await sleep(1000);
 
-      const tweets = await this.selectorHelper.getTweets();
-
-      if (tweets.length === 0) {
+      const attemptedTargets = new Set<string>();
+      const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
+      if (!firstCandidate) {
         consecutiveFailures++;
         if (consecutiveFailures >= 3) break;
         await this.selectorHelper.scrollToBottom();
         continue;
       }
 
+      attemptedTargets.add(firstCandidate.key);
       let unretweetedInBatch = 0;
-      const processCount = Math.min(executionConfig.deletePerBatch, tweets.length);
 
-      for (let i = 0; i < processCount; i++) {
+      for (let i = 0; i < executionConfig.deletePerBatch; i++) {
         try {
-          // 取消转推前记录推文信息
-          const tweetInfo = await this.selectorHelper.extractTweetInfo(tweets[i]);
-          this.logDeletionTarget(ContentType.RETWEETS, tweetInfo);
+          throwIfCancellationRequested();
 
-          const success = await this.selectorHelper.unretweet(tweets[i]);
+          const candidate =
+            i === 0 ? firstCandidate : await this.getNextTweetCandidate(attemptedTargets);
+          if (!candidate) {
+            break;
+          }
+          attemptedTargets.add(candidate.key);
+          this.logDeletionTarget(ContentType.RETWEETS, candidate.info);
+
+          const success = await this.selectorHelper.unretweet(candidate.element);
           if (success) {
             unretweetedInBatch++;
             await this.sleepBetweenActions();
@@ -487,13 +558,14 @@ export class TwitterDeleter {
     log.info('开始取消点赞...');
 
     while (totalUnliked < executionConfig.maxDeletePerSession) {
+      throwIfCancellationRequested();
       await this.ensureSessionActive('取消点赞 批次检查');
       await this.selectorHelper.scrollToTop();
       await sleep(1000);
 
-      const tweets = await this.selectorHelper.getTweets();
-
-      if (tweets.length === 0) {
+      const attemptedTargets = new Set<string>();
+      const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
+      if (!firstCandidate) {
         consecutiveFailures++;
         log.debug(`未找到推文，连续失败: ${consecutiveFailures}/3`);
         if (consecutiveFailures >= 3) {
@@ -505,16 +577,22 @@ export class TwitterDeleter {
         continue;
       }
 
+      attemptedTargets.add(firstCandidate.key);
       let unlikedInBatch = 0;
-      const processCount = Math.min(executionConfig.deletePerBatch, tweets.length);
 
-      for (let i = 0; i < processCount; i++) {
+      for (let i = 0; i < executionConfig.deletePerBatch; i++) {
         try {
-          // 取消点赞前记录推文信息
-          const tweetInfo = await this.selectorHelper.extractTweetInfo(tweets[i]);
-          this.logDeletionTarget(ContentType.LIKES, tweetInfo);
+          throwIfCancellationRequested();
 
-          const success = await this.selectorHelper.unlike(tweets[i]);
+          const candidate =
+            i === 0 ? firstCandidate : await this.getNextTweetCandidate(attemptedTargets);
+          if (!candidate) {
+            break;
+          }
+          attemptedTargets.add(candidate.key);
+          this.logDeletionTarget(ContentType.LIKES, candidate.info);
+
+          const success = await this.selectorHelper.unlike(candidate.element);
           if (success) {
             unlikedInBatch++;
             log.debug(`成功取消一个点赞`);
@@ -573,13 +651,14 @@ export class TwitterDeleter {
     log.info('开始删除书签...');
 
     while (totalRemoved < executionConfig.maxDeletePerSession) {
+      throwIfCancellationRequested();
       await this.ensureSessionActive('删除书签 批次检查');
       await this.selectorHelper.scrollToTop();
       await sleep(1000);
 
-      const tweets = await this.selectorHelper.getTweets();
-
-      if (tweets.length === 0) {
+      const attemptedTargets = new Set<string>();
+      const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
+      if (!firstCandidate) {
         consecutiveFailures++;
         log.debug(`未找到书签，连续失败: ${consecutiveFailures}/3`);
         if (consecutiveFailures >= 3) {
@@ -591,16 +670,22 @@ export class TwitterDeleter {
         continue;
       }
 
+      attemptedTargets.add(firstCandidate.key);
       let removedInBatch = 0;
-      const processCount = Math.min(executionConfig.deletePerBatch, tweets.length);
 
-      for (let i = 0; i < processCount; i++) {
+      for (let i = 0; i < executionConfig.deletePerBatch; i++) {
         try {
-          // 删除书签前记录推文信息
-          const tweetInfo = await this.selectorHelper.extractTweetInfo(tweets[i]);
-          this.logDeletionTarget(ContentType.BOOKMARKS, tweetInfo);
+          throwIfCancellationRequested();
 
-          const success = await this.selectorHelper.removeBookmark(tweets[i]);
+          const candidate =
+            i === 0 ? firstCandidate : await this.getNextTweetCandidate(attemptedTargets);
+          if (!candidate) {
+            break;
+          }
+          attemptedTargets.add(candidate.key);
+          this.logDeletionTarget(ContentType.BOOKMARKS, candidate.info);
+
+          const success = await this.selectorHelper.removeBookmark(candidate.element);
           if (success) {
             removedInBatch++;
             log.debug(`成功删除一个书签`);
@@ -659,13 +744,14 @@ export class TwitterDeleter {
     log.info('开始取消关注...');
 
     while (totalUnfollowed < executionConfig.maxDeletePerSession) {
+      throwIfCancellationRequested();
       await this.ensureSessionActive('取消关注 批次检查');
       await this.selectorHelper.scrollToTop();
       await sleep(1000);
 
-      const users = await this.selectorHelper.getFollowingUsers();
-
-      if (users.length === 0) {
+      const attemptedTargets = new Set<string>();
+      const firstCandidate = await this.getNextUserCandidate(attemptedTargets);
+      if (!firstCandidate) {
         consecutiveFailures++;
         log.debug(`未找到关注用户，连续失败: ${consecutiveFailures}/3`);
         if (consecutiveFailures >= 3) {
@@ -677,16 +763,22 @@ export class TwitterDeleter {
         continue;
       }
 
+      attemptedTargets.add(firstCandidate.key);
       let unfollowedInBatch = 0;
-      const processCount = Math.min(executionConfig.deletePerBatch, users.length);
 
-      for (let i = 0; i < processCount; i++) {
+      for (let i = 0; i < executionConfig.deletePerBatch; i++) {
         try {
-          // 取消关注前记录用户信息
-          const userInfo = await this.selectorHelper.extractUserInfo(users[i]);
-          this.logDeletionTarget(ContentType.FOLLOWING, userInfo);
+          throwIfCancellationRequested();
 
-          const success = await this.selectorHelper.unfollowUser(users[i]);
+          const candidate =
+            i === 0 ? firstCandidate : await this.getNextUserCandidate(attemptedTargets);
+          if (!candidate) {
+            break;
+          }
+          attemptedTargets.add(candidate.key);
+          this.logDeletionTarget(ContentType.FOLLOWING, candidate.info);
+
+          const success = await this.selectorHelper.unfollowUser(candidate.element);
           if (success) {
             unfollowedInBatch++;
             log.debug(`成功取消关注一个用户`);
