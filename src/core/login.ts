@@ -12,6 +12,29 @@ import { LoginResult } from '../types';
 export class LoginManager {
   constructor(private page: Page) {}
 
+  private extractUsernameFromUrl(url: string): string | null {
+    if (!url) {
+      return null;
+    }
+
+    try {
+      const parsed = new URL(url);
+      if (!['twitter.com', 'www.twitter.com', 'x.com', 'www.x.com'].includes(parsed.hostname)) {
+        return null;
+      }
+
+      const pathname = parsed.pathname.replace(/^\/+|\/+$/g, '');
+      if (!pathname || pathname === 'home') {
+        return null;
+      }
+
+      const [username] = pathname.split('/');
+      return username || null;
+    } catch {
+      return null;
+    }
+  }
+
   private getCurrentUrl(): string {
     try {
       return this.page.url();
@@ -208,7 +231,7 @@ export class LoginManager {
     log.info('  2. 完成所有验证步骤（如有两步验证）');
     log.info('  3. 登录成功后，脚本将自动检测并继续');
     log.info('');
-    log.info('⏱️  最多等待 5 分钟，请在此时间内完成登录');
+    log.info('⏱️  默认等待 5 分钟，如进入验证步骤会额外延长最多 3 分钟');
     log.info('');
 
     try {
@@ -225,7 +248,9 @@ export class LoginManager {
     const startedAt = Date.now();
     const baseTimeoutMs = 5 * 60 * 1000;
     const verificationGraceMs = 3 * 60 * 1000;
+    const maxTimeoutMs = baseTimeoutMs + verificationGraceMs;
     let deadline = startedAt + baseTimeoutMs;
+    let verificationGraceApplied = false;
     let attempts = 0;
     let lastMessage = 0;
 
@@ -241,8 +266,9 @@ export class LoginManager {
         return { success: true, message: '手动登录成功' };
       }
 
-      if (loginState === 'verification') {
-        deadline = Math.max(deadline, Date.now() + verificationGraceMs);
+      if (loginState === 'verification' && !verificationGraceApplied) {
+        deadline = Math.min(startedAt + maxTimeoutMs, deadline + verificationGraceMs);
+        verificationGraceApplied = true;
       }
 
       // 每 30 秒提示一次
@@ -276,10 +302,9 @@ export class LoginManager {
 
       // 尝试从 URL 或页面元素中提取用户名
       const url = this.getCurrentUrl();
-      const match = url.match(/twitter\.com\/([^/]+)/);
-
-      if (match && match[1] !== 'home') {
-        return match[1];
+      const usernameFromUrl = this.extractUsernameFromUrl(url);
+      if (usernameFromUrl) {
+        return usernameFromUrl;
       }
 
       // 尝试从页面元素获取
