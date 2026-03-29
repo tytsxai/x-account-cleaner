@@ -3,6 +3,7 @@ import type { ElementHandle } from 'playwright';
 import { log } from '../utils/logger';
 import { sleep, randomSleep, withRetry } from '../utils/retry';
 import { SelectorHelper, TweetInfo, UserInfo } from '../utils/selector';
+import { getEnvConfig } from '../config/config';
 import { Config, ContentType, DeleteStats } from '../types';
 
 /**
@@ -153,23 +154,67 @@ export class TwitterDeleter {
     }
   }
 
-  private async ensureSessionActive(context: string): Promise<void> {
-    const url = this.page.url();
+  private getCurrentUrl(): string {
+    try {
+      return this.page.url();
+    } catch {
+      return '';
+    }
+  }
+
+  private async getSessionBlocker(context: string): Promise<string | null> {
+    const url = this.getCurrentUrl();
     const pathname = this.getPathname(url);
     const blockedPrefixes = ['/i/flow', '/login', '/account/access'];
 
     if (blockedPrefixes.some((blocked) => pathname.startsWith(blocked))) {
-      throw new Error(`检测到登录失效或需要验证 (${context})，请重新登录后再继续`);
+      return `检测到登录失效或需要验证 (${context})`;
     }
 
     const loginField = await this.page.$('input[autocomplete="username"]');
     if (loginField) {
-      throw new Error(`检测到登录页面 (${context})，请重新登录后再继续`);
+      return `检测到登录页面 (${context})`;
     }
 
     const verificationField = await this.page.$('input[data-testid="ocfEnterTextTextInput"]');
     if (verificationField) {
-      throw new Error(`检测到账号验证页面 (${context})，请重新登录后再继续`);
+      return `检测到账号验证页面 (${context})`;
+    }
+
+    return null;
+  }
+
+  private async waitForSessionRecovery(context: string, reason: string): Promise<void> {
+    const envConfig = getEnvConfig();
+    if (envConfig.headless) {
+      throw new Error(`${reason}，HEADLESS=true 无法手动恢复，请重新登录后再继续`);
+    }
+
+    const timeoutMs = 2 * 60 * 1000;
+    const deadline = Date.now() + timeoutMs;
+    let lastNotice = 0;
+
+    log.warn(`${reason}，暂停等待手动恢复会话...`);
+    while (Date.now() < deadline) {
+      await sleep(2000);
+      const blocker = await this.getSessionBlocker(context);
+      if (!blocker) {
+        log.info(`检测到会话已恢复，继续执行 (${context})`);
+        return;
+      }
+      if (Date.now() - lastNotice >= 30000) {
+        lastNotice = Date.now();
+        log.info(`仍在等待会话恢复 (${context})...`);
+      }
+    }
+
+    throw new Error(`${reason}，等待手动恢复超时 (${context})`);
+  }
+
+  private async ensureSessionActive(context: string): Promise<void> {
+    const blocker = await this.getSessionBlocker(context);
+    if (blocker) {
+      await this.waitForSessionRecovery(context, blocker);
     }
 
     await this.detectBlockingState(context);

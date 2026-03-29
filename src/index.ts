@@ -4,7 +4,7 @@ import { BrowserManager } from './core/browser';
 import { LoginManager } from './core/login';
 import { TwitterDeleter } from './core/deleter';
 import { getEnvConfig, loadConfig, validateConfig } from './config/config';
-import { log } from './utils/logger';
+import { initLogger, log } from './utils/logger';
 import { acquireRunLock, RunLock } from './utils/run-lock';
 import chalk from 'chalk';
 import * as fs from 'fs';
@@ -228,6 +228,7 @@ async function shutdown(
  * 主函数
  */
 async function main() {
+  initLogger();
   let deleter: TwitterDeleter | null = null;
 
   try {

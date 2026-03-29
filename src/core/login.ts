@@ -12,6 +12,37 @@ import { LoginResult } from '../types';
 export class LoginManager {
   constructor(private page: Page) {}
 
+  private getCurrentUrl(): string {
+    try {
+      return this.page.url();
+    } catch (error) {
+      log.debug('读取当前 URL 失败', error);
+      return '';
+    }
+  }
+
+  private async getManualLoginState(): Promise<
+    'logged_in' | 'verification' | 'login_flow' | 'pending'
+  > {
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 1000 }).catch(() => undefined);
+
+    if (await this.isLoggedInWithoutNavigation()) {
+      return 'logged_in';
+    }
+
+    const verificationField = await this.page.$('input[data-testid="ocfEnterTextTextInput"]');
+    if (verificationField) {
+      return 'verification';
+    }
+
+    const loginField = await this.page.$('input[autocomplete="username"], input[type="password"]');
+    if (loginField) {
+      return 'login_flow';
+    }
+
+    return 'pending';
+  }
+
   /**
    * 检查是否已登录
    */
@@ -43,7 +74,7 @@ export class LoginManager {
    */
   private async isLoggedInWithoutNavigation(): Promise<boolean> {
     try {
-      const url = this.page.url();
+      const url = this.getCurrentUrl();
       if (url.includes('/home')) {
         return true;
       }
@@ -191,32 +222,45 @@ export class LoginManager {
     }
 
     // 等待用户手动登录（检测 URL 变化）
+    const startedAt = Date.now();
+    const baseTimeoutMs = 5 * 60 * 1000;
+    const verificationGraceMs = 3 * 60 * 1000;
+    let deadline = startedAt + baseTimeoutMs;
     let attempts = 0;
-    const maxAttempts = 300; // 最多等待 5 分钟
     let lastMessage = 0;
 
-    while (attempts < maxAttempts) {
+    while (Date.now() < deadline) {
       await sleep(1000);
       attempts++;
 
-      // 每 30 秒提示一次
-      if (attempts - lastMessage >= 30) {
-        const remaining = Math.floor((maxAttempts - attempts) / 60);
-        log.info(`⏳ 等待登录中... (剩余时间约 ${remaining} 分钟)`);
-        lastMessage = attempts;
-      }
-
-      const loggedIn = await this.isLoggedInWithoutNavigation();
-      if (loggedIn) {
+      const loginState = await this.getManualLoginState();
+      if (loginState === 'logged_in') {
         log.success('');
         log.success('✓ 检测到登录成功！');
         log.success('');
         return { success: true, message: '手动登录成功' };
       }
+
+      if (loginState === 'verification') {
+        deadline = Math.max(deadline, Date.now() + verificationGraceMs);
+      }
+
+      // 每 30 秒提示一次
+      if (attempts - lastMessage >= 30) {
+        const remaining = Math.max(1, Math.ceil((deadline - Date.now()) / 60000));
+        if (loginState === 'verification') {
+          log.info(`⏳ 检测到验证步骤，继续等待... (剩余时间约 ${remaining} 分钟)`);
+        } else if (loginState === 'login_flow') {
+          log.info(`⏳ 仍在登录流程中，请继续完成登录... (剩余时间约 ${remaining} 分钟)`);
+        } else {
+          log.info(`⏳ 等待登录中... (剩余时间约 ${remaining} 分钟)`);
+        }
+        lastMessage = attempts;
+      }
     }
 
     log.error('');
-    log.error('等待登录超时（5 分钟）');
+    log.error('等待登录超时，请确认是否卡在验证码、二次验证或网络异常页面');
     log.error('请重新运行程序');
     log.error('');
     return { success: false, message: '登录超时' };
@@ -231,7 +275,7 @@ export class LoginManager {
       await sleep(2000);
 
       // 尝试从 URL 或页面元素中提取用户名
-      const url = this.page.url();
+      const url = this.getCurrentUrl();
       const match = url.match(/twitter\.com\/([^/]+)/);
 
       if (match && match[1] !== 'home') {
