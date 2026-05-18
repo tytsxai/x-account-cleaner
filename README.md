@@ -1,8 +1,14 @@
-# twitter-auto-cleaner（X / Twitter 自动清理工具）
+# X / Twitter 自动清理工具 (twitter-auto-cleaner)
 
-一个基于 Playwright 的 **全方位 Twitter 账号清理解决方案**，可以批量删除推文、回复、转推、点赞、书签，以及取消关注用户。
+[![Release](https://img.shields.io/github/v/release/tytsxai/x-account-cleaner)](https://github.com/tytsxai/x-account-cleaner/releases) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/x-account-cleaner/issues)
 
-**仓库地址**：https://github.com/tytsxai/twitter-auto-cleaner
+> **关键词**:X 账号清理 · Twitter 账号清理 · X 批量删除推文 · Twitter 批量删除推文 · X 批量取消点赞 · X 批量取消关注 · X 删书签 · X 注销前清理 · X 小号整理 · X 批量清理工具
+>
+> **Keywords**: X account cleanup tool · Twitter account wipe · bulk delete tweets · bulk unlike Twitter · bulk unfollow Twitter · Twitter pre-deletion cleanup · Playwright Twitter cleaner · open-source X cleaner · alternative to redact for Twitter
+
+一个基于 Playwright 的 **全方位 Twitter / X 账号清理解决方案**,可以批量删除推文、回复、转推、点赞、书签,以及取消关注用户。**完全本地运行** —— Playwright 控制 Chromium 浏览器自动化你自己的登录会话,**不走 X 官方 API**,凭据只在本机。
+
+**仓库地址**:https://github.com/tytsxai/x-account-cleaner
 
 ## ✨ 功能特性
 
