@@ -10,6 +10,14 @@
 
 **仓库地址**:https://github.com/tytsxai/x-account-cleaner
 
+> ⚠️ **Best-effort,不保证可用 — X 的 DOM 随时变,选择器随时坏**
+>
+> 这个工具靠抓取 `x.com` / `twitter.com` 的页面元素（如 `[data-testid="UserCell"]`、`[href*="/status/"]`，见 `src/utils/selector.ts`）来识别推文、回复、关注等。**X 的前端结构会无预警变动**，一次发布就可能让选择器全部失效；恢复需要重新对照线上 DOM 校准。
+>
+> - 删除后无法撤销（X 不提供 trash），**先在 `config.json` 里把 `deleteOptions` 中不想动的类目设为 `false`、把 `executionConfig.maxDeletePerSession` 调小**（默认 100）做小批量试跑，确认目标识别正确再全量。
+> - 卡在某一步、计数不动、或动作明显误伤：基本可以判断是选择器过期，提 issue 附上当时的 X 页面 HTML 片段更便于修。
+> - 维护策略：**坏了才修**，不做主动跟进，无 CI 守护进程探测线上 DOM 变化。
+
 ## ✨ 功能特性
 
 ### 核心清理功能
