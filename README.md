@@ -495,3 +495,7 @@ MIT License
 ---
 
 **注意**：本工具会永久删除你的 Twitter 内容，请谨慎使用！建议先小批量测试，确认无误后再大规模使用。
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tytsxai/x-account-cleaner&type=Date)](https://www.star-history.com/#tytsxai/x-account-cleaner&Date)
