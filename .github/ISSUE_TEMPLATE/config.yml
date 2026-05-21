@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting guide
+    url: https://github.com/tytsxai/x-account-cleaner/blob/main/docs/TROUBLESHOOTING.md
+    about: Check login, selector, browser, and runtime troubleshooting first.
+  - name: Following cleanup guide
+    url: https://github.com/tytsxai/x-account-cleaner/blob/main/docs/FOLLOWING_MANAGEMENT.md
+    about: Read this before reporting unfollow workflow issues.

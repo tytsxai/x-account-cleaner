@@ -95,9 +95,21 @@ npm run build
 
 在提交前，请确保：
 
-1. 代码能通过 ESLint 检查
-2. 代码能成功编译
-3. 手动测试核心功能正常
+```bash
+npm run verify
+npm pack --dry-run
+```
+
+`npm run verify` 会执行 TypeScript 编译、ESLint、Prettier 检查、CLI 帮助命令测试、选择器配置测试和关注管理核心测试。`npm pack --dry-run` 用于确认公开包不会带入 `.claude`、日志、浏览器数据或其他本地文件。
+
+如果改动影响真实 X / Twitter 页面自动化，还需要用 `HEADLESS=false` 和小批量配置做一次人工浏览器验证。
+
+### 安全与隐私
+
+- 不要提交 `.env`、cookies、`browser-data/`、`logs/`、关注导出文件或任何真实账号私密数据。
+- 破坏性操作必须继续保留小批量、dry-run、确认文件或人工确认路径。
+- 任何命令行帮助、文档示例和 Issue 回复都不应鼓励绕过 X 风控或服务条款。
+- 安全问题处理方式见 [SECURITY.md](SECURITY.md)。
 
 ## 需要帮助？
 
@@ -108,7 +120,6 @@ npm run build
 - 查看现有的 Issues 和 Discussions
 
 再次感谢你的贡献！🎉
-
 
 
 

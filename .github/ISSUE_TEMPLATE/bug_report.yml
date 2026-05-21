@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem in X Account Cleaner.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Do not paste passwords, cookies, tokens, or full browser profile files.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect to happen?
+      placeholder: The command failed when...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the exact command and the smallest config change needed to reproduce it.
+      placeholder: |
+        1. Run npm run start -- ...
+        2. Open ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: x-account-cleaner 1.0.0
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: v20.12.2
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste only redacted logs. Remove handles, cookies, passwords, tokens, and account-specific private data.
+      render: text

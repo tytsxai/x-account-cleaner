@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest a concrete improvement for X Account Cleaner.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: What account-cleanup problem should this solve?
+      placeholder: I want to safely clean...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful behavior, command, config, or workflow change.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety considerations
+      description: Could this delete data, unfollow accounts, trigger risk controls, or expose private data?
+      placeholder: It should require dry-run / confirmation because...
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Mention simpler approaches or existing tools you tried.

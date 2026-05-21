@@ -1,6 +1,13 @@
 # X Account Cleaner - X / Twitter Account Cleanup Tool
 
-[![Release](https://img.shields.io/github/v/release/tytsxai/x-account-cleaner)](https://github.com/tytsxai/x-account-cleaner/releases) · [Quick Start](QUICKSTART.md) · [Docs](docs/README.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/x-account-cleaner/issues)
+[![CI](https://github.com/tytsxai/x-account-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/tytsxai/x-account-cleaner/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tytsxai/x-account-cleaner)](https://github.com/tytsxai/x-account-cleaner/releases)
+[![License: MIT](https://img.shields.io/github/license/tytsxai/x-account-cleaner)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.18.0-339933)](package.json)
+[![Playwright](https://img.shields.io/badge/automation-Playwright-2EAD33)](https://playwright.dev/)
+[![Local First](https://img.shields.io/badge/local--first-no%20server-blue)](#项目定位--what-it-is)
+
+[Quick Start](QUICKSTART.md) · [Docs](docs/README.md) · [Security](SECURITY.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/x-account-cleaner/issues)
 
 **X Account Cleaner** 是一个本地运行的开源 X / Twitter 账号清理工具。它基于 **Node.js + TypeScript + Playwright + Chromium** 自动操作你自己的浏览器登录会话，用于批量删除推文和回复、取消转推、取消点赞、删除书签，并通过“导出关注列表 - 规则筛选 - 人工复核 - dry-run - 确认执行”的流程安全管理关注取关。
 
@@ -21,6 +28,14 @@
 | 不适合 | 想恢复已删除内容、批量操作他人账号、绕过 X 风控或服务条款的人 |
 
 常见搜索关键词包括：`X Account Cleaner`、`Twitter account cleanup tool`、`Twitter Auto Cleaner`、`X 账号清理工具`、`Twitter 批量删除推文`、`X 批量取消点赞`、`X 批量取消关注`、`Playwright Twitter cleaner`、`open-source Twitter cleaner`。
+
+## 为什么值得收藏 / Why Star This
+
+- **本地优先**：不需要 X API Key，不需要把账号交给第三方服务。
+- **覆盖真实清理场景**：推文、回复、转推、点赞、书签和关注列表复核都在一个项目里。
+- **关注取关有安全闭环**：导出、规则筛选、人工复核、dry-run、确认文件、慢速执行和 resume 分开处理。
+- **选择器可维护**：X 页面变动时优先更新 [selectors.json](selectors.json)，不必直接改核心逻辑。
+- **可验证工程面**：`npm run verify` 覆盖编译、lint、格式、CLI 帮助、选择器配置和关注管理核心测试；GitHub Actions 会在 PR 上执行同一套检查。
 
 ## 解决什么问题
 
@@ -81,6 +96,10 @@ chmod +x install.sh start.sh
 ```bash
 npm install
 npx playwright install chromium
+
+# 查看命令帮助，不会打开浏览器或执行清理
+npm run start -- --help
+npm run start -- followings --help
 
 # 生产模式：先编译再运行
 npm run build
@@ -215,7 +234,9 @@ npm run test:selectors
 - [docs/OPERATIONS.md](docs/OPERATIONS.md): 运行和运维建议。
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): 架构说明。
 - [docs/API.md](docs/API.md): 代码接口说明。
+- [docs/OPEN_SOURCE_READINESS.md](docs/OPEN_SOURCE_READINESS.md): 公开仓库展示、CI、Issue/PR、安全和发版检查清单。
 - [llms.txt](llms.txt): 面向 AI 搜索、代码助手和摘要系统的项目说明。
+- [SECURITY.md](SECURITY.md): 安全报告和本地账号数据保护说明。
 
 ## 开发与验证
 

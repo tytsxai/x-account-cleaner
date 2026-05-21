@@ -12,6 +12,8 @@
 - [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md): Following export, classification, manual review, dry-run, execute, and resume workflow.
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md): Login, selector, browser, and runtime troubleshooting.
 - [docs/SELECTOR_UPDATE_GUIDE.md](docs/SELECTOR_UPDATE_GUIDE.md): How to update selectors when X / Twitter changes its DOM.
+- [docs/OPEN_SOURCE_READINESS.md](docs/OPEN_SOURCE_READINESS.md): Public repository, CI, issue intake, security, packaging, and release-readiness checklist.
+- [SECURITY.md](SECURITY.md): Security reporting and local account-data safety policy.
 - `install.bat` / `start.bat`: Windows one-click scripts.
 - `install.sh` / `start.sh`: macOS / Linux one-click scripts.
 - `config.json`: Cleanup strategy configuration.
@@ -34,6 +36,8 @@
 - **Risk reduction controls**: stable browser profile, manual login, headful execution, small-batch testing, and conservative following workflow
 - **Progress tracking**: real-time per-category counters
 - **Run summaries**: JSON summaries under `logs/run-summary-*.json`
+- **CLI safety**: `--help`, `followings --help`, and `--version` print information without opening a browser or touching an account
+- **Public repo readiness**: GitHub Actions CI, issue templates, PR checklist, security policy, and npm package dry-run checks
 
 ## What this tool does NOT do
 

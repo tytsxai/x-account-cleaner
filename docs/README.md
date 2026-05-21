@@ -14,6 +14,7 @@
 | [ADVANCED.md](ADVANCED.md) | 需要精细配置的用户 | 进阶配置、执行节奏、浏览器和日志选项 |
 | [OPERATIONS.md](OPERATIONS.md) | 需要长期运行或定时执行的用户 | 运行前检查、日志、恢复、风险控制和运维建议 |
 | [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) | 准备稳定使用或发布的人 | 生产就绪检查、风险项和上线前确认 |
+| [OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) | 准备维护公开仓库、发版或吸引贡献的人 | README 展示、CI、Issue/PR、安全和 npm package 检查清单 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 开发者 | 模块边界、核心流程和代码结构 |
 | [API.md](API.md) | 开发者 | 主要类、配置和接口说明 |
 
@@ -22,6 +23,7 @@
 - 新用户先读 [../README.md](../README.md) 和 [../QUICKSTART.md](../QUICKSTART.md)。
 - 想只清理关注列表，直接读 [FOLLOWING_MANAGEMENT.md](FOLLOWING_MANAGEMENT.md)。
 - 如果 X 页面更新后按钮找不到，读 [SELECTOR_UPDATE_GUIDE.md](SELECTOR_UPDATE_GUIDE.md)。
+- 准备公开发布、收 Star 或接收外部贡献，读 [OPEN_SOURCE_READINESS.md](OPEN_SOURCE_READINESS.md) 和 [../SECURITY.md](../SECURITY.md)。
 - 给 AI 搜索引擎或代码助手摘要项目时，可引用 [../llms.txt](../llms.txt)。
 
 ## 项目边界
