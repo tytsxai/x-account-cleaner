@@ -1,282 +1,161 @@
-# X Account Cleaner - X / Twitter 自动清理工具
+# X Account Cleaner - X / Twitter Account Cleanup Tool
 
-[![Release](https://img.shields.io/github/v/release/tytsxai/x-account-cleaner)](https://github.com/tytsxai/x-account-cleaner/releases) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/x-account-cleaner/issues)
+[![Release](https://img.shields.io/github/v/release/tytsxai/x-account-cleaner)](https://github.com/tytsxai/x-account-cleaner/releases) · [Quick Start](QUICKSTART.md) · [Docs](docs/README.md) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/x-account-cleaner/issues)
 
-> **关键词**:X Account Cleaner · X 账号清理工具 · Twitter 账号清理工具 · Twitter Auto Cleaner · Twitter Cleaner · X 批量删除推文 · Twitter 批量删除推文 · X 批量取消点赞 · X 批量取消关注 · X 删书签 · X 注销前清理 · X 小号整理 · X 批量清理工具
->
-> **Keywords**: X Account Cleaner · Twitter Auto Cleaner · Twitter cleaner · X account cleanup tool · Twitter account wipe · bulk delete tweets · bulk unlike Twitter · bulk unfollow Twitter · Twitter pre-deletion cleanup · Playwright Twitter cleaner · open-source X cleaner · alternative to redact for Twitter
+**X Account Cleaner** 是一个本地运行的开源 X / Twitter 账号清理工具。它基于 **Node.js + TypeScript + Playwright + Chromium** 自动操作你自己的浏览器登录会话，用于批量删除推文和回复、取消转推、取消点赞、删除书签，并通过“导出关注列表 - 规则筛选 - 人工复核 - dry-run - 确认执行”的流程安全管理关注取关。
 
-**X Account Cleaner** 是一个基于 Playwright 的本地 X / Twitter 账号清理工具，也可按旧名称 `twitter-auto-cleaner` 搜索到。它可以批量删除推文、回复、转推、点赞、书签，并通过导出、规则筛选、人工复核、确认名单执行的流程安全管理关注取关。**完全本地运行** —— Playwright 控制 Chromium 浏览器自动化你自己的登录会话，**不走 X 官方 API**，凭据只在本机。
+**English summary:** X Account Cleaner is an open-source, local-first Playwright automation tool for cleaning an X / Twitter account. It helps bulk delete tweets and replies, undo retweets, unlike tweets, remove bookmarks, and review/unfollow accounts through a confirmation-based workflow. It does not use the official X API and does not send your credentials to a third-party service.
 
-**仓库地址**:https://github.com/tytsxai/x-account-cleaner
+**Repository:** <https://github.com/tytsxai/x-account-cleaner><br>
+**旧名称 / Alias:** `twitter-auto-cleaner`
 
-> ⚠️ **Best-effort,不保证可用 — X 的 DOM 随时变,选择器随时坏**
->
-> 这个工具靠抓取 `x.com` / `twitter.com` 的页面元素（如 `[data-testid="UserCell"]`、`[href*="/status/"]`，见 `src/utils/selector.ts`）来识别推文、回复、关注等。**X 的前端结构会无预警变动**，一次发布就可能让选择器全部失效；恢复需要重新对照线上 DOM 校准。
->
-> - 删除后无法撤销（X 不提供 trash），**先在 `config.json` 里把 `deleteOptions` 中不想动的类目设为 `false`、把 `executionConfig.maxDeletePerSession` 调小**（默认 100）做小批量试跑，确认目标识别正确再全量。
-> - 卡在某一步、计数不动、或动作明显误伤：基本可以判断是选择器过期，提 issue 附上当时的 X 页面 HTML 片段更便于修。
-> - 维护策略：**坏了才修**，不做主动跟进，无 CI 守护进程探测线上 DOM 变化。
+## 项目定位 / What It Is
 
-## ✨ 功能特性
+| 项目 | 说明 |
+|---|---|
+| 项目类型 | 本地桌面自动化工具 / Local browser automation tool |
+| 核心用途 | X / Twitter 账号内容清理、注销前清理、小号整理、关注列表复核 |
+| 技术栈 | Node.js >= 18.18.0, TypeScript, Playwright, Chromium, Winston |
+| 运行方式 | 本机运行，控制 Playwright Chromium 浏览器，不调用 X API |
+| 适合人群 | 想清理自己 X / Twitter 账号内容的个人用户、开发者、自动化工具维护者 |
+| 不适合 | 想恢复已删除内容、批量操作他人账号、绕过 X 风控或服务条款的人 |
 
-### 核心清理功能
-- 🐦 **删除推文**：批量删除所有普通推文
-- 💬 **删除回复**：批量删除所有回复内容
-- 🔄 **取消转推**：批量取消所有转推
-- ❤️ **取消点赞**：批量取消所有点赞的推文
-- 🔖 **删除书签**：批量删除所有保存的书签
-- 👥 **关注管理**：导出关注列表、规则筛选候选、人工复核确认、慢速顺序取消关注
+常见搜索关键词包括：`X Account Cleaner`、`Twitter account cleanup tool`、`Twitter Auto Cleaner`、`X 账号清理工具`、`Twitter 批量删除推文`、`X 批量取消点赞`、`X 批量取消关注`、`Playwright Twitter cleaner`、`open-source Twitter cleaner`。
 
-### 技术特性
-- 🔐 **登录管理**：支持自动登录和手动登录，保存登录状态
-- ⚙️ **配置化管理**：通过配置文件自定义清理策略
-- 🔄 **智能重试**：自动重试失败的操作，支持指数退避
-- 📊 **详细日志**：完整的日志记录，支持文件输出
-- 🎯 **批量处理**：分批清理，避免触发 Twitter 限制
-- 🛡️ **反检测**：模拟真实用户行为，降低被检测风险
-- 📈 **进度追踪**：实时显示清理进度和统计信息
+## 解决什么问题
 
-## 📋 环境要求
+很多用户在注销、转让、停用或重新整理 X / Twitter 账号前，需要批量清理历史内容。但 X 网页端没有提供完整的一键清理入口，官方 API 又有权限、费用和限制。本项目选择更直接的本地浏览器自动化路线：
 
-- Node.js >= 18.18.0（当前 ESLint / TypeScript 工具链要求 Node 18.18+）
-- npm 或 yarn
-- Windows / macOS / Linux
+- 使用你自己的登录会话打开 `x.com` / `twitter.com` 页面。
+- 根据 `config.json` 决定要清理哪些内容类型。
+- 通过选择器识别推文、回复、转推、点赞、书签和关注列表。
+- 按批次、延迟、重试和运行上限执行，降低误操作和触发风控的概率。
+- 关注取关默认走人工确认名单，避免把自动筛选结果直接执行。
 
-## 🚀 快速开始
+## 核心功能 / Features
 
-> 💡 **新手友好**：我们提供了一键启动脚本，无需了解命令行！
+- 批量删除推文 / bulk delete tweets
+- 批量删除回复 / bulk delete replies
+- 取消转推 / undo retweets
+- 取消点赞 / unlike liked tweets
+- 删除书签 / remove bookmarks
+- 关注管理 / following cleanup workflow
+  - 导出关注列表为 JSONL / CSV
+  - 按 handle、关键词和低信息账号规则生成候选名单
+  - 人工把确认要取关的账号写入 `approved-unfollow.jsonl`
+  - `dry-run` 预览后再慢速顺序执行
+  - 中断后可通过 `resume` 继续
+- 登录状态持久化到本地 `browser-data/state.json`
+- 支持 `.env` 浏览器画像、日志级别和安全开关配置
+- 支持 `selectors.json` 独立选择器配置，用于应对 X 前端 DOM 变动
+- 每次运行写入 `logs/run-summary-*.json`，便于排障和审计
 
-### 方式一：一键启动（推荐）
+## 快速开始 / Quick Start
 
-**Windows 用户：**
-1. 双击运行 `install.bat` 安装依赖
-2. 双击运行 `start.bat` 启动程序
-3. 在浏览器中完成登录
-4. 程序自动开始清理
+环境要求：
 
-**Linux/Mac 用户：**
+- Node.js >= 18.18.0
+- npm
+- Windows、macOS 或 Linux
+- 一个可登录的 X / Twitter 账号
+
+### Windows 一键运行
+
+```bat
+install.bat
+start.bat
+```
+
+运行前建议先打开 `config.json`，把 `executionConfig.maxDeletePerSession` 调小到 `5` 或 `10` 做试跑。
+
+### macOS / Linux 一键运行
+
 ```bash
-# 1. 安装依赖
-chmod +x install.sh
+chmod +x install.sh start.sh
 ./install.sh
-
-# 2. 启动程序
-chmod +x start.sh
 ./start.sh
 ```
 
-### 方式二：命令行启动
-
-如果你熟悉命令行，可以使用 npm 命令：
+### npm 命令运行
 
 ```bash
-# 1. 安装依赖
 npm install
 npx playwright install chromium
 
-# 2. 启动程序（生产模式）
+# 生产模式：先编译再运行
 npm run build
 npm run start:prod
 
-# 快速运行（非生产）
+# 开发模式：直接用 ts-node 运行
 npm start
-
-# 或：开发模式（热加载，代码修改自动重启）
-npm run dev
 ```
 
----
+如果不想把账号密码写入 `.env`，保持 `TWITTER_USERNAME` / `TWITTER_PASSWORD` 为空即可。程序会打开浏览器，等待你手动登录；登录状态会保存在本机。
 
-## 📖 启动模式说明
+## 最小配置示例
 
-### 🚀 生产模式（正常使用）
-
-**启动方式：**
-- Windows: 双击 `start.bat`
-- Linux/Mac: `./start.sh`
-- 命令行: `npm run build && npm run start:prod`
-
-**特点：** 稳定可靠，适合日常使用
-
-### 🔥 开发模式（代码开发）
-
-**启动方式：**
-- Windows: 双击 `开发模式启动.bat`
-- Linux/Mac: `./开发模式启动.sh`
-- 命令行: `npm run dev`
-
-**特点：**
-- ✨ **热加载** - 修改代码后自动重启
-- ✨ 实时查看代码更改效果
-- ✨ 无需手动编译
-
-**详细启动说明请查看：** [启动指南.md](启动指南.md)
-
----
-
-## ⚙️ 配置说明
-
-### 1. 配置环境变量（可选）
-
-复制 `env.example` 到 `.env` 并填写配置：
-
-```bash
-# Windows
-copy env.example .env
-
-# macOS/Linux
-cp env.example .env
-```
-
-编辑 `.env` 文件：
-
-```env
-# Twitter 登录信息（可选）
-TWITTER_USERNAME=your_username_or_email
-TWITTER_PASSWORD=your_password
-
-# 浏览器配置
-HEADLESS=false                    # 是否无头模式（建议设为 false）
-BROWSER_TYPE=chromium             # 浏览器类型：chromium/firefox/webkit
-BROWSER_VIEWPORT_WIDTH=1512       # 稳定设备画像：14 英寸 MacBook Pro 全屏基准
-BROWSER_VIEWPORT_HEIGHT=982
-BROWSER_DEVICE_SCALE_FACTOR=2
-BROWSER_LOCALE=zh-CN
-BROWSER_TIMEZONE_ID=Asia/Shanghai
-BROWSER_USER_AGENT=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
-
-# 日志配置
-LOG_LEVEL=info                    # 日志级别：error/warn/info/debug
-LOG_TO_FILE=true                  # 是否记录到文件
-
-# 运行配置
-FAIL_ON_ERRORS=false              # 是否在出现错误时退出码非 0
-ALLOW_LEGACY_FOLLOWING_DELETE=false # 默认禁止旧式直接取关，推荐 followings 四步工作流
-
-# 其他配置
-USER_DATA_DIR=./browser-data      # 浏览器数据目录
-```
-
-### 2. 配置删除选项（必需）
-
-编辑 `config.json` 文件，自定义删除策略：
+主要配置文件是 [config.json](config.json)。首次运行建议只开少量目标，确认页面识别正确后再扩大范围。
 
 ```json
 {
   "deleteOptions": {
-    "tweets": true,      // 是否删除推文
-    "retweets": true,    // 是否取消转推
-    "replies": true,     // 是否删除回复
-    "likes": false,      // 是否取消点赞
-    "bookmarks": false,  // 是否删除书签 ⭐ 新功能
-    "following": false   // 是否取消关注 ⭐ 新功能
+    "tweets": true,
+    "retweets": true,
+    "replies": true,
+    "likes": false,
+    "bookmarks": false,
+    "following": false
   },
   "executionConfig": {
-    "maxDeletePerSession": 100,  // 单次运行最大删除数量
-    "deletePerBatch": 6,         // 每批删除数量
-    "delayBetweenActions": 1500, // 操作间延迟（毫秒）
-    "delayJitterMs": 500,        // 操作延迟随机抖动（毫秒，可选）
-    "delayBetweenBatches": 2500, // 批次间延迟（毫秒）
-    "pageRefreshDelay": 4000,    // 页面刷新后等待时间（毫秒）
-    "refreshBatchInterval": 2    // 每 N 个批次刷新一次页面（可选）
-  },
-  "retryConfig": {
-    "maxRetries": 3,             // 最大重试次数
-    "retryDelay": 5000,          // 重试延迟（毫秒）
-    "exponentialBackoff": true   // 是否使用指数退避
-  },
-  "followingPlan": {
-    "mode": "export"             // followings 默认子命令：export/classify/dry-run/execute
-  },
-  "followingManagement": {
-    "enabled": false,
-    "outputDir": "data/followings",
-    "rules": {
-      "keepHandles": [],
-      "dropHandles": [],
-      "keepKeywords": ["ai", "developer", "科技"],
-      "dropKeywords": ["airdrop", "casino", "空投"],
-      "lowInfoCandidate": true
-    },
-    "execution": {
-      "minDelayMs": 6000,
-      "maxDelayMs": 14000,
-      "maxUnfollowPerSession": 50,
-      "requireConfirmFile": true,
-      "maxConsecutiveFailures": 3,
-      "cooldownEveryActions": 20,
-      "cooldownMs": 300000
-    },
-    "safety": {
-      "requireHeadfulForExecute": true,
-      "stopOnRiskSignals": true,
-      "riskTextPatterns": ["unusual activity", "account locked", "请验证", "访问受限"]
-    }
+    "maxDeletePerSession": 10,
+    "deletePerBatch": 6,
+    "delayBetweenActions": 1500,
+    "delayJitterMs": 500,
+    "delayBetweenBatches": 2500,
+    "pageRefreshDelay": 4000,
+    "refreshBatchInterval": 2
   }
 }
 ```
 
-## 📖 使用说明
-
-### 登录方式
-
-工具支持两种登录方式：
-
-#### 方式 1：自动登录（推荐）
-
-在 `.env` 文件中设置账号密码：
-
-```env
-TWITTER_USERNAME=your_username
-TWITTER_PASSWORD=your_password
-```
-
-程序会自动登录并保存登录状态。
-
-#### 方式 2：手动登录
-
-如果未设置账号密码，或自动登录失败，程序会打开浏览器等待你手动登录。登录完成后，程序会自动检测并继续执行。
-
-### 登录状态保存
-
-首次登录成功后，登录状态会保存在 `browser-data/state.json`。下次运行时会自动使用保存的登录状态，无需重复登录。
-
-如需重新登录，删除该文件即可：
+可选环境变量文件：[env.example](env.example)。
 
 ```bash
-# Windows
-del browser-data\state.json
-
-# macOS/Linux
-rm browser-data/state.json
+cp env.example .env
 ```
 
-### 清理流程：推文、点赞、书签等内容
+常用环境变量：
 
-1. 程序启动后会显示配置信息
-2. 倒计时 10 秒后开始执行（可按 Ctrl+C 取消）
-3. 按配置依次执行清理操作：
-   - 删除推文（如启用）
-   - 删除回复（如启用）
-   - 取消转推（如启用）
-   - 取消点赞（如启用）
-   - 删除书签（如启用）⭐ 新增
-   - 取消关注（如启用）⭐ 新增
-4. 实时显示清理进度
-5. 完成后显示详细统计信息
+```env
+HEADLESS=false
+BROWSER_TYPE=chromium
+BROWSER_VIEWPORT_WIDTH=1512
+BROWSER_VIEWPORT_HEIGHT=982
+BROWSER_LOCALE=zh-CN
+BROWSER_TIMEZONE_ID=Asia/Shanghai
+LOG_LEVEL=info
+LOG_TO_FILE=true
+USER_DATA_DIR=./browser-data
+ALLOW_LEGACY_FOLLOWING_DELETE=false
+```
 
-### 关注管理流程（推荐）
+## 典型使用场景 / Use Cases
 
-关注清理建议不要直接打开 `deleteOptions.following` 一键执行，而是使用四步复核流程：
+- 注销 X / Twitter 账号前清理历史推文、回复、点赞和书签。
+- 整理长期不用的小号、测试号或运营账号。
+- 账号转交前先删除不适合保留的个人内容。
+- 批量导出关注列表，按规则找出疑似低质量、广告、空投、博彩类账号，再人工确认取关。
+- 研究 Playwright 网页自动化、选择器维护、批量任务节流和本地运行日志设计。
 
-> `deleteOptions.following=true` 的旧式直接取关路径默认会被拦截；如确需兼容旧流程，需要显式设置 `ALLOW_LEGACY_FOLLOWING_DELETE=true`。
+## 关注清理推荐流程
+
+不建议直接打开 `deleteOptions.following=true`。旧式直接取关路径默认会被 `ALLOW_LEGACY_FOLLOWING_DELETE=false` 拦截。推荐使用下面的确认名单流程：
 
 ```bash
 # 1. 只读导出关注列表
 npm run start -- followings export
 
-# 2. 按 config.json 的 followingManagement.rules 生成候选/保留/复核文件
+# 2. 按 config.json 的 followingManagement.rules 生成候选、保留、复核文件
 npm run start -- followings classify --input data/followings/<runId>/followings.jsonl
 
 # 3. 人工从 candidates.jsonl 复制确认要取关的账号到 approved-unfollow.jsonl 后预览
@@ -284,282 +163,141 @@ npm run start -- followings dry-run --input data/followings/<runId>/approved-unf
 
 # 4. 慢速顺序执行最终确认名单
 npm run start -- followings execute --confirm-file data/followings/<runId>/approved-unfollow.jsonl
-```
 
-中断或达到 `maxUnfollowPerSession` 后，可继续：
-
-```bash
+# 5. 中断或达到 maxUnfollowPerSession 后继续
 npm run start -- followings resume --run-id <runId>
 ```
 
-详细文件格式和配置说明见 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)。
+详细说明见 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)。
 
-### 安全建议
+## 重要限制和风险 / Limitations
 
-- ⚠️ **谨慎操作**：删除的内容无法恢复
-- 🔒 **保护账号**：不要在公共环境使用
-- 🕒 **控制频率**：避免短时间内大量操作
-- 💾 **备份数据**：重要内容请提前备份
-- 🖥️ **稳定画像**：同一账号固定 `USER_DATA_DIR`、UA、视口、语言、时区，不要频繁随机切换
-- 🧯 **风险熔断**：关注取关默认有头执行，命中验证码/限制/账号异常文案或连续失败会停止
+请先读完这一节再运行。
 
-## 🛠️ 开发指南
+- 删除、取消点赞、取消转推、删除书签和取关都是账号上的真实操作，通常不可撤销。
+- 本项目依赖 X / Twitter 网页 DOM 选择器，例如 `[data-testid="tweet"]`、`[data-testid="UserCell"]`。X 前端结构随时可能变化，选择器失效时需要更新 [selectors.json](selectors.json)。
+- 本项目不保证规避风控。短时间大量操作、频繁切换 IP / UA / 时区 / 设备画像、无头模式硬跑，都可能触发验证或限制。
+- 本项目不使用 X 官方 API，也不提供性能承诺、成功率承诺或账号安全承诺。
+- 当前不支持按日期范围、关键词或互动数精确筛选推文后再删除。
+- 当前不处理私信、列表、社群、粉丝移除和 X 付费功能。
+- 使用者需要自行确认使用方式符合 X 服务条款和所在地法律法规。
 
-### 项目结构
+## 选择器失效时怎么办
 
-```
-x-account-cleaner/
-├── src/
-│   ├── config/
-│   │   └── config.ts          # 配置管理
-│   ├── core/
-│   │   ├── browser.ts         # 浏览器初始化和管理
-│   │   ├── login.ts           # 登录逻辑
-│   │   └── deleter.ts         # 删除核心逻辑
-│   ├── utils/
-│   │   ├── selector.ts        # 元素选择器工具
-│   │   ├── logger.ts          # 日志工具
-│   │   └── retry.ts           # 重试机制
-│   ├── types/
-│   │   └── index.ts           # TypeScript 类型定义
-│   └── index.ts               # 主入口
-├── config.json                # 用户配置文件
-├── env.example                # 环境变量示例
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
-### 启动脚本
-
-**一键启动脚本（推荐）：**
-
-| 平台 | 安装依赖 | 生产模式 | 开发模式（热加载） |
-|------|---------|---------|------------------|
-| Windows | `install.bat` | `start.bat` | `开发模式启动.bat` |
-| Linux/Mac | `install.sh` | `start.sh` | `开发模式启动.sh` |
-
-**NPM 命令：**
+如果程序突然找不到按钮、计数不动、点击失败或页面流程卡住，通常是 X 页面结构变化导致选择器过期。
 
 ```bash
-# 运行
-npm run build         # 编译 TypeScript 到 dist/
-npm run start:prod    # 生产模式运行
-npm start             # 快速运行（非生产）
-npm run dev           # 开发模式运行（热加载，代码修改自动重启）
-
-# 代码质量
-npm run lint          # 检查代码
-npm run lint:fix      # 修复代码问题
-npm run format        # 格式化代码
-npm run format:check  # 检查格式
-
-# 清理
-npm run clean         # 清理编译输出
+npm run test:selectors
 ```
 
-> 📖 **详细启动说明**：请查看 [启动指南.md](启动指南.md)
+处理路径：
 
-### 自定义选择器（应对页面结构更新）⭐ 新功能
+1. 打开浏览器开发者工具，定位失效按钮或列表项。
+2. 查看新的 `data-testid`、`aria-label`、`role` 或链接结构。
+3. 更新 [selectors.json](selectors.json) 中对应选择器。
+4. 重新运行 `npm run test:selectors`。
+5. 先用小批量配置试跑。
 
-**🎯 重要：** Twitter 经常更新页面结构，导致选择器失效。现在我们提供了**独立的选择器配置系统**！
+参考文档：
 
-#### 方式 1：使用独立配置文件（推荐）
+- [选择器配置说明.md](选择器配置说明.md)
+- [选择器快速参考.txt](选择器快速参考.txt)
+- [docs/SELECTOR_UPDATE_GUIDE.md](docs/SELECTOR_UPDATE_GUIDE.md)
 
-我们提供了 `selectors.json` 文件，当功能失效时只需更新此文件：
+## 文档导航 / Documentation
 
-```json
-{
-  "selectors": {
-    "tweetMoreButton": {
-      "primary": "[aria-label*='更多'][role='button']",  // 主选择器
-      "fallback": "[data-testid='caret']",              // 备用选择器
-      "description": "推文的'更多'按钮"
-    }
-  }
-}
+- [QUICKSTART.md](QUICKSTART.md): 5 分钟快速开始。
+- [START_HERE.md](START_HERE.md): 面向新用户的入口导航。
+- [docs/README.md](docs/README.md): docs 目录索引，适合开发者和 AI 搜索引擎快速理解文档结构。
+- [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md): 关注导出、筛选、复核和取关工作流。
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md): 常见故障排查。
+- [docs/ADVANCED.md](docs/ADVANCED.md): 高级配置。
+- [docs/OPERATIONS.md](docs/OPERATIONS.md): 运行和运维建议。
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): 架构说明。
+- [docs/API.md](docs/API.md): 代码接口说明。
+- [llms.txt](llms.txt): 面向 AI 搜索、代码助手和摘要系统的项目说明。
+
+## 开发与验证
+
+```bash
+# 编译
+npm run build
+
+# 代码检查
+npm run lint
+npm run format:check
+
+# 选择器配置和关注管理脚本测试
+npm run test:selectors
+npm run test:following
+
+# 一次性验证
+npm run verify
 ```
 
-**优点：**
-- ✅ 支持主选择器和备用选择器
-- ✅ 详细的注释和说明
-- ✅ 无需修改代码
-- ✅ 包含更新指南
+项目结构：
 
-**快速修复步骤：**
-1. 按 F12 打开浏览器开发者工具
-2. 定位失效的按钮，查看 `data-testid` 或 `aria-label` 属性
-3. 更新 `selectors.json` 中对应的选择器
-4. 重新运行程序
-
-📖 **详细教程：** 查看 [选择器配置说明.md](选择器配置说明.md) 和 [选择器更新指南](docs/SELECTOR_UPDATE_GUIDE.md)
-
-#### 方式 2：直接修改 config.json
-
-如果不想使用独立配置文件，可以编辑 `config.json` 中的 `selectors` 部分：
-
-```json
-{
-  "selectors": {
-    "tweetMoreButton": "[aria-label*='更多'][role='button']",
-    "deleteButton": "[role='menuitem'][data-testid*='delete']",
-    "confirmDeleteButton": "[data-testid='confirmationSheetConfirm']",
-    "tweet": "[data-testid='tweet']",
-    "unretweet": "[data-testid='unretweet']",
-    "unretweetConfirm": "[data-testid='unretweetConfirm']"
-  }
-}
+```text
+x-account-cleaner/
+├── src/
+│   ├── config/config.ts
+│   ├── core/browser.ts
+│   ├── core/login.ts
+│   ├── core/deleter.ts
+│   ├── core/following-management.ts
+│   ├── utils/
+│   └── types/index.ts
+├── docs/
+├── examples/
+├── scripts/
+├── config.json
+├── selectors.json
+├── env.example
+├── README.md
+└── llms.txt
 ```
 
-**配置优先级：** `selectors.json` > `config.json`
+## FAQ
 
-### 调试技巧
+### 需要 X API Key 或开发者账号吗？
 
-1. **查看浏览器操作**：将 `HEADLESS` 设为 `false`
-2. **查看详细日志**：将 `LOG_LEVEL` 设为 `debug`
-3. **查看日志文件**：检查 `logs/` 目录
-4. **调整延迟时间**：增加 `delayBetweenActions` 以观察操作
+不需要。本项目通过 Playwright 控制浏览器访问 X 网页端，不调用官方 API。
 
-## ❓ 常见问题
+### 凭据会上传到服务器吗？
 
-### Q: 程序运行但没有删除任何内容？
+不会。项目设计为本机运行。自动登录凭据来自你的 `.env`，浏览器状态保存在本地 `USER_DATA_DIR`。仍然建议优先使用手动登录，避免明文保存密码。
 
-**A**: 可能的原因：
-- 选择器已过期（Twitter 更新了页面结构）
-- 页面加载时间不足（增加 `pageRefreshDelay`）
-- 没有找到对应的内容类型
-- 查看日志文件获取详细错误信息
+### 可以只清理点赞或书签吗？
 
-### Q: 登录失败怎么办？
+可以。只需要在 `config.json` 的 `deleteOptions` 中把目标类型设为 `true`，其他类型设为 `false`。
 
-**A**: 尝试以下方法：
-- 使用手动登录方式
-- 检查账号密码是否正确
-- 查看是否需要额外验证（手机号/邮箱验证码）
-- 删除 `browser-data/state.json` 后重试
+### 删除后可以恢复吗？
 
-### Q: 如何避免被 Twitter 检测？
+通常不能。运行前请备份重要内容，并先用 `maxDeletePerSession: 5` 或 `10` 小批量验证。
 
-**A**: 建议：
-- 降低删除速度（增加延迟时间）
-- 减少单次删除数量
-- 分多次运行，间隔时间长一些
-- 不要在短时间内频繁操作
+### 为什么有时没有删除任何内容？
 
-### Q: 删除速度太慢？
+常见原因是选择器过期、页面加载慢、登录状态失效、账号进入验证页，或对应内容类型本来为空。请查看 `logs/`、提高 `pageRefreshDelay`，并参考 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。
 
-**A**: 可以调整配置：
-- 减少 `delayBetweenActions`
-- 增加 `deletePerBatch`
-- 减少 `pageRefreshDelay`
+### 能不能全自动大规模取关？
 
-**注意**：速度过快可能触发 Twitter 限制！
+不建议。关注管理默认要求导出、筛选、人工确认和 dry-run，最终只执行确认名单。这样更慢，但更能避免误伤。
 
-### Q: 程序中途出错怎么办？
+## GitHub Topics 建议
 
-**A**:
-- 查看日志文件确定错误原因
-- 重新运行程序会从当前状态继续
-- 如果反复出错，尝试减少删除速度
+如果你维护这个仓库，可以在 GitHub repository topics 中加入：
 
-### Q: 如何只删除特定时间段的内容？
+`x` · `twitter` · `twitter-cleaner` · `x-account-cleaner` · `account-cleaner` · `bulk-delete-tweets` · `bulk-unlike` · `bulk-unfollow` · `playwright` · `typescript` · `automation` · `privacy-tool`
 
-**A**: 当前版本不支持此功能，这是未来的改进方向。
+## 免责声明 / Disclaimer
 
-### Q: 新增的书签和关注管理功能如何使用？
+本工具仅用于清理你自己有权操作的 X / Twitter 账号内容。使用本工具造成的内容丢失、账号限制、账号封禁或其他后果由使用者自行承担。请遵守 X / Twitter 服务条款和适用法律法规。
 
-**A**: 在 `config.json` 中启用对应选项：
-```json
-{
-  "deleteOptions": {
-    "bookmarks": true,   // 启用删除书签
-    "following": false   // 主账号建议保持 false，改用 followings 子命令复核后取关
-  }
-}
-```
-⚠️ 关注清理推荐先运行 `followings export` 和 `followings classify`。`approved-unfollow.jsonl` 默认是空文件，需要人工从 `candidates.jsonl` 复制确认账号后再执行；程序会拒绝直接执行 `candidates.jsonl` / `followings.jsonl` / `keep-list.jsonl`。
+This project is provided for personal account cleanup and educational automation use. You are responsible for how you use it and for any account or data consequences.
 
-### Q: 取消关注会影响什么？
+## License
 
-**A**:
-- 会取消关注你关注列表中的用户
-- 操作不可逆，需要手动重新关注
-- 建议谨慎使用，先导出关注列表备份
-
-## 🔮 未来改进方向
-
-### 短期改进
-
-- [x] **取消点赞**：批量取消所有点赞 ✅ 已完成
-- [x] **删除书签**：批量删除所有书签 ✅ 已完成
-- [x] **关注管理**：导出、筛选、复核、确认名单取关 ✅ 已完成
-- [ ] **移除粉丝**：批量移除粉丝
-- [ ] **清理私信**：批量删除私信对话
-- [ ] **日期过滤**：支持按时间范围删除内容
-- [ ] **关键词过滤**：根据内容关键词选择性删除
-- [ ] **互动筛选**：保留高互动内容（点赞数、转发数）
-- [x] **关注导出备份**：取关前导出关注列表 JSONL/CSV ✅ 已完成
-- [x] **关注模拟预览**：确认名单 dry-run 预览 ✅ 已完成
-
-### 中期改进
-
-- [ ] **多账号支持**：管理多个 Twitter 账号
-- [ ] **定时任务**：设置定时自动清理
-- [ ] **Web 界面**：提供图形化配置界面
-- [ ] **增量删除**：记录已删除内容，避免重复操作
-- [ ] **更智能的选择器**：自动适配页面结构变化
-
-### 长期改进
-
-- [ ] **Docker 部署**：容器化部署，简化环境配置
-- [ ] **云端调度**：部署到云服务器定期执行
-- [ ] **API 集成**：使用 Twitter API（需要开发者账号）
-- [ ] **机器学习**：智能识别重要内容
-- [ ] **反检测增强**：更好地模拟人类行为
-- [ ] **浏览器扩展**：开发 Chrome/Firefox 扩展
-
-### 技术优化
-
-- [ ] **并发处理**：支持多标签页同时删除
-- [ ] **错误恢复**：断点续传功能
-- [ ] **性能优化**：减少内存占用
-- [ ] **测试覆盖**：添加单元测试和集成测试
-- [ ] **CI/CD**：自动化构建和发布
-
-## 📝 更新日志
-
-### v1.1.0 (2025-10-04)
-
-- ✨ **新增功能**：删除书签
-- ✨ **新增功能**：取消关注用户
-- ✨ **完善功能**：完整实现取消点赞功能
-- 🔧 扩展类型系统和选择器工具
-- 📊 更新统计信息显示
-- 📖 新增《功能升级说明.md》文档
-
-### v1.0.0 (2024-01-XX)
-
-- ✨ 初始版本发布
-- 🤖 支持自动删除推文、回复、转推
-- 🔐 支持自动登录和手动登录
-- ⚙️ 完整的配置化管理
-- 📊 详细的日志和统计
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## ⚖️ 免责声明
-
-本工具仅供学习和研究使用。使用本工具造成的任何后果由使用者自行承担。请遵守 Twitter 的服务条款和使用政策。
-
-## 📄 许可证
-
-MIT License
-
----
-
-**注意**：本工具会永久删除你的 Twitter 内容，请谨慎使用！建议先小批量测试，确认无误后再大规模使用。
+[MIT License](LICENSE)
 
 ## Star History
 

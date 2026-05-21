@@ -7,7 +7,8 @@
 ### 新手入门
 1. **[README.md](README.md)** - 项目介绍和功能特性（⭐ 推荐阅读）
 2. **[QUICKSTART.md](QUICKSTART.md)** - 5分钟快速开始
-3. **[选择器配置说明.md](选择器配置说明.md)** - 当 Twitter 更新时如何修复
+3. **[docs/README.md](docs/README.md)** - docs 目录索引，按使用、排障、开发场景跳转
+4. **[选择器配置说明.md](选择器配置说明.md)** - 当 Twitter 更新时如何修复
 
 ### 快速开始（3步）
 
@@ -34,6 +35,7 @@
 ### 🔧 配置相关
 - **[选择器配置说明.md](选择器配置说明.md)** - 当 Twitter 更新后如何修复
 - **[选择器快速参考.txt](选择器快速参考.txt)** - 快速参考卡片
+- **[docs/README.md](docs/README.md)** - 文档索引和项目边界说明
 - **[docs/SELECTOR_UPDATE_GUIDE.md](docs/SELECTOR_UPDATE_GUIDE.md)** - 详细的选择器更新教程
 - **[docs/ADVANCED.md](docs/ADVANCED.md)** - 高级配置选项
 - **[docs/OPERATIONS.md](docs/OPERATIONS.md)** - 生产运行与运维指南

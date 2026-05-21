@@ -1,15 +1,22 @@
 # x-account-cleaner / X Account Cleaner / twitter-auto-cleaner
 
-> Open-source Playwright-based desktop tool for **cleaning an X / Twitter account locally**: bulk delete tweets and replies, undo retweets, unlike liked tweets, remove bookmarks, and manage following cleanup through export, classification, manual review, dry-run, and confirmed execution. Runs entirely on your own machine — automates the X web UI in a Chromium browser using your own logged-in session. Cross-platform (Windows / macOS / Linux), one-click install + start scripts, config-driven cleaning strategy, exponential-backoff retry, stable browser profile controls, run summaries, and progress tracking.
+> X Account Cleaner is an open-source, local-first X / Twitter account cleanup tool. It uses Node.js, TypeScript, Playwright, and Chromium to automate the logged-in X web UI on the user's own machine. It can bulk delete tweets and replies, undo retweets, unlike tweets, remove bookmarks, and manage following cleanup through export, classification, manual review, dry-run, and confirmed execution.
 
-This is the X / Twitter counterpart to projects like `bilibili-cleaner`. Use cases: pre-account-deletion data wipe, side account cleanup, account hand-over, privacy sweep.
+中文摘要：X Account Cleaner 是一个本地运行的 X / Twitter 账号清理工具，适合注销前清理、小号整理、账号转交前内容清理、关注列表复核等场景。它不调用 X 官方 API，不需要 API Key，也不会把登录凭据上传到第三方服务。
 
 ## Key docs
 
-- [README.md](README.md): Feature list, prerequisites, three quick-start paths (Windows .bat, macOS/Linux .sh, npm), configuration reference, anti-detection notes.
+- [README.md](README.md): Project positioning, feature list, prerequisites, quick start, use cases, limitations, FAQ, and SEO/GEO-friendly overview.
+- [QUICKSTART.md](QUICKSTART.md): Minimal setup and first run.
+- [docs/README.md](docs/README.md): Documentation index for users, maintainers, and AI search engines.
+- [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md): Following export, classification, manual review, dry-run, execute, and resume workflow.
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md): Login, selector, browser, and runtime troubleshooting.
+- [docs/SELECTOR_UPDATE_GUIDE.md](docs/SELECTOR_UPDATE_GUIDE.md): How to update selectors when X / Twitter changes its DOM.
 - `install.bat` / `start.bat`: Windows one-click scripts.
-- `install.sh`: macOS / Linux installer.
-- `config.json` / equivalent: Strategy configuration.
+- `install.sh` / `start.sh`: macOS / Linux one-click scripts.
+- `config.json`: Cleanup strategy configuration.
+- `selectors.json`: DOM selector configuration.
+- `env.example`: Optional login, browser, logging, and safety environment variables.
 
 ## What this tool does
 
@@ -23,27 +30,30 @@ This is the X / Twitter counterpart to projects like `bilibili-cleaner`. Use cas
 - **Config-driven**: customize cleaning strategy via config file
 - **Smart retry**: exponential backoff on transient failures
 - **Detailed logging**: full audit trail to file
-- **Batch processing**: chunked operations to avoid X rate-limit triggers
-- **Anti-detection**: emulates real-user browser fingerprint and pacing
+- **Batch processing**: chunked operations and configurable delays
+- **Risk reduction controls**: stable browser profile, manual login, headful execution, small-batch testing, and conservative following workflow
 - **Progress tracking**: real-time per-category counters
+- **Run summaries**: JSON summaries under `logs/run-summary-*.json`
 
 ## What this tool does NOT do
 
 - ❌ Delete someone else's account data — only the account you logged into
-- ❌ Bypass X's terms of service (you still operate as your account, just programmatically) — verify your usage doesn't violate ToS in your jurisdiction
+- ❌ Guarantee account safety or bypass X risk controls
 - ❌ Recover deleted tweets — operations are irreversible
 - ❌ Touch DMs, lists, communities, or paid X features
 - ❌ Send anything to a third-party server — Playwright session lives on your machine
-- ❌ Work without Node.js — needs Node >= 18.18
+- ❌ Work without Node.js — needs Node >= 18.18.0
+- ❌ Precisely delete tweets by date range, keyword, or engagement metrics in the current version
 
 ## Common questions
 
-- **会不会被 X 封号?** 风险存在但工具尽量降低 —— 分批处理 + 指数退避 + 反检测 fingerprint + 模拟真实用户节奏。但 X 政策随时可能变,**你自己承担风险**。建议先用小号试。
+- **会不会被 X 限制或封号?** 风险存在。工具提供分批处理、延迟、重试、稳定浏览器画像和人工确认流程，但不保证规避风控。建议先小批量试跑。
 - **删过的推能恢复吗?** 不能。X 没有撤销机制。**先想清楚再跑**。
-- **要不要 API Key / Developer 账号?** 不需要。工具走的是网页前端自动化(Playwright 控制浏览器),不调 X API。
-- **登录状态保存在哪?** Playwright 的浏览器 user-data 目录,本地文件;关闭浏览器不会丢,主动删除目录可清。
+- **要不要 API Key / Developer 账号?** 不需要。工具走网页前端自动化，Playwright 控制浏览器，不调 X API。
+- **登录状态保存在哪?** 默认保存在本地 `browser-data/state.json` 和 `USER_DATA_DIR`。
 - **能只清一类(比如只清点赞)吗?** 能。配置文件控制启用哪些清理任务。
 - **macOS / Windows / Linux 都支持?** 都支持。Windows 有 `.bat` 一键脚本,macOS / Linux 用 `install.sh` + npm。
+- **关注清理为什么要人工确认?** 自动规则可能误判。项目默认要求把候选账号人工复制到 `approved-unfollow.jsonl` 后才能执行。
 
 ## Repository
 

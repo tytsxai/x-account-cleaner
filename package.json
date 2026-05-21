@@ -1,7 +1,7 @@
 {
   "name": "x-account-cleaner",
   "version": "1.0.0",
-  "description": "本地运行的 X / Twitter 账号清理工具：批量删除推文、回复、转推、点赞、书签，并通过导出、复核、确认名单安全管理关注取关。",
+  "description": "Local-first X / Twitter account cleanup tool built with Playwright: bulk delete tweets and replies, undo retweets, unlike tweets, remove bookmarks, and review/unfollow accounts safely.",
   "main": "dist/index.js",
   "homepage": "https://github.com/tytsxai/x-account-cleaner#readme",
   "repository": {
@@ -29,18 +29,28 @@
   "keywords": [
     "twitter",
     "x",
+    "x-cleaner",
     "x-account-cleaner",
+    "x-account-cleanup",
     "twitter-cleaner",
     "twitter-auto-cleaner",
+    "twitter-account-cleaner",
+    "twitter-account-cleanup",
     "account-cleaner",
     "tweet-delete",
+    "delete-tweets",
     "bulk-delete-tweets",
+    "bulk-delete-twitter",
     "bulk-unlike",
     "bulk-unfollow",
+    "twitter-unfollow",
     "bookmark-cleaner",
+    "privacy-tool",
+    "local-first",
     "automation",
     "cleaner",
-    "playwright"
+    "playwright",
+    "typescript"
   ],
   "author": "",
   "license": "MIT",
