@@ -1,6 +1,6 @@
 # 🚀 从这里开始
 
-欢迎使用 **Twitter 自动清理工具**！
+欢迎使用 **X Account Cleaner（X / Twitter 自动清理工具）**！
 
 ## 📖 快速导航
 
@@ -37,6 +37,7 @@
 - **[docs/SELECTOR_UPDATE_GUIDE.md](docs/SELECTOR_UPDATE_GUIDE.md)** - 详细的选择器更新教程
 - **[docs/ADVANCED.md](docs/ADVANCED.md)** - 高级配置选项
 - **[docs/OPERATIONS.md](docs/OPERATIONS.md)** - 生产运行与运维指南
+- **[docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md)** - 生产就绪评估与上线检查
 
 ### 👨‍💻 开发相关
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - 项目架构说明

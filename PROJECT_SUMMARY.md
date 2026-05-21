@@ -2,10 +2,10 @@
 
 ## 📦 项目概述
 
-**项目名称**：twitter-auto-cleaner（X / Twitter 自动清理工具）  
+**项目名称**：x-account-cleaner（X Account Cleaner / X / Twitter 自动清理工具，旧称 twitter-auto-cleaner）
 **版本**：1.0.0  
 **技术栈**：TypeScript + Playwright + Node.js  
-**定位**：企业级、工程化的浏览器自动化工具
+**定位**：本地运行、可配置、可审计的 X / Twitter 账号清理工具
 
 ## ✅ 已完成功能
 
@@ -14,7 +14,9 @@
 - ✅ 自动删除推文
 - ✅ 自动取消转推
 - ✅ 自动删除回复
-- ✅ 取消点赞（框架已完成，需根据实际页面调整）
+- ✅ 取消点赞
+- ✅ 删除书签
+- ✅ 关注管理：导出、规则筛选、人工复核、dry-run、确认名单取关
 
 ### 登录管理
 
@@ -68,7 +70,7 @@
 ## 📁 项目结构
 
 ```
-twitter-auto-cleaner/
+x-account-cleaner/
 ├── src/
 │   ├── config/
 │   │   └── config.ts              # 配置管理
@@ -451,8 +453,6 @@ MIT License - 可自由使用和修改
 ---
 
 **最后提醒**：本工具会永久删除 Twitter 内容，请谨慎使用！
-
-
 
 
 

@@ -1,12 +1,12 @@
-# X / Twitter 自动清理工具 (twitter-auto-cleaner)
+# X Account Cleaner - X / Twitter 自动清理工具
 
 [![Release](https://img.shields.io/github/v/release/tytsxai/x-account-cleaner)](https://github.com/tytsxai/x-account-cleaner/releases) · [llms.txt](llms.txt) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/tytsxai/x-account-cleaner/issues)
 
-> **关键词**:X 账号清理 · Twitter 账号清理 · X 批量删除推文 · Twitter 批量删除推文 · X 批量取消点赞 · X 批量取消关注 · X 删书签 · X 注销前清理 · X 小号整理 · X 批量清理工具
+> **关键词**:X Account Cleaner · X 账号清理工具 · Twitter 账号清理工具 · Twitter Auto Cleaner · Twitter Cleaner · X 批量删除推文 · Twitter 批量删除推文 · X 批量取消点赞 · X 批量取消关注 · X 删书签 · X 注销前清理 · X 小号整理 · X 批量清理工具
 >
-> **Keywords**: X account cleanup tool · Twitter account wipe · bulk delete tweets · bulk unlike Twitter · bulk unfollow Twitter · Twitter pre-deletion cleanup · Playwright Twitter cleaner · open-source X cleaner · alternative to redact for Twitter
+> **Keywords**: X Account Cleaner · Twitter Auto Cleaner · Twitter cleaner · X account cleanup tool · Twitter account wipe · bulk delete tweets · bulk unlike Twitter · bulk unfollow Twitter · Twitter pre-deletion cleanup · Playwright Twitter cleaner · open-source X cleaner · alternative to redact for Twitter
 
-一个基于 Playwright 的 **全方位 Twitter / X 账号清理解决方案**,可以批量删除推文、回复、转推、点赞、书签,以及取消关注用户。**完全本地运行** —— Playwright 控制 Chromium 浏览器自动化你自己的登录会话,**不走 X 官方 API**,凭据只在本机。
+**X Account Cleaner** 是一个基于 Playwright 的本地 X / Twitter 账号清理工具，也可按旧名称 `twitter-auto-cleaner` 搜索到。它可以批量删除推文、回复、转推、点赞、书签，并通过导出、规则筛选、人工复核、确认名单执行的流程安全管理关注取关。**完全本地运行** —— Playwright 控制 Chromium 浏览器自动化你自己的登录会话，**不走 X 官方 API**，凭据只在本机。
 
 **仓库地址**:https://github.com/tytsxai/x-account-cleaner
 
@@ -26,7 +26,7 @@
 - 🔄 **取消转推**：批量取消所有转推
 - ❤️ **取消点赞**：批量取消所有点赞的推文
 - 🔖 **删除书签**：批量删除所有保存的书签
-- 👥 **取消关注**：批量取消关注的用户
+- 👥 **关注管理**：导出关注列表、规则筛选候选、人工复核确认、慢速顺序取消关注
 
 ### 技术特性
 - 🔐 **登录管理**：支持自动登录和手动登录，保存登录状态
@@ -39,7 +39,7 @@
 
 ## 📋 环境要求
 
-- Node.js >= 16.0.0
+- Node.js >= 18.18.0（当前 ESLint / TypeScript 工具链要求 Node 18.18+）
 - npm 或 yarn
 - Windows / macOS / Linux
 
@@ -139,6 +139,12 @@ TWITTER_PASSWORD=your_password
 # 浏览器配置
 HEADLESS=false                    # 是否无头模式（建议设为 false）
 BROWSER_TYPE=chromium             # 浏览器类型：chromium/firefox/webkit
+BROWSER_VIEWPORT_WIDTH=1512       # 稳定设备画像：14 英寸 MacBook Pro 全屏基准
+BROWSER_VIEWPORT_HEIGHT=982
+BROWSER_DEVICE_SCALE_FACTOR=2
+BROWSER_LOCALE=zh-CN
+BROWSER_TIMEZONE_ID=Asia/Shanghai
+BROWSER_USER_AGENT=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
 
 # 日志配置
 LOG_LEVEL=info                    # 日志级别：error/warn/info/debug
@@ -146,6 +152,7 @@ LOG_TO_FILE=true                  # 是否记录到文件
 
 # 运行配置
 FAIL_ON_ERRORS=false              # 是否在出现错误时退出码非 0
+ALLOW_LEGACY_FOLLOWING_DELETE=false # 默认禁止旧式直接取关，推荐 followings 四步工作流
 
 # 其他配置
 USER_DATA_DIR=./browser-data      # 浏览器数据目录
@@ -178,6 +185,34 @@ USER_DATA_DIR=./browser-data      # 浏览器数据目录
     "maxRetries": 3,             // 最大重试次数
     "retryDelay": 5000,          // 重试延迟（毫秒）
     "exponentialBackoff": true   // 是否使用指数退避
+  },
+  "followingPlan": {
+    "mode": "export"             // followings 默认子命令：export/classify/dry-run/execute
+  },
+  "followingManagement": {
+    "enabled": false,
+    "outputDir": "data/followings",
+    "rules": {
+      "keepHandles": [],
+      "dropHandles": [],
+      "keepKeywords": ["ai", "developer", "科技"],
+      "dropKeywords": ["airdrop", "casino", "空投"],
+      "lowInfoCandidate": true
+    },
+    "execution": {
+      "minDelayMs": 6000,
+      "maxDelayMs": 14000,
+      "maxUnfollowPerSession": 50,
+      "requireConfirmFile": true,
+      "maxConsecutiveFailures": 3,
+      "cooldownEveryActions": 20,
+      "cooldownMs": 300000
+    },
+    "safety": {
+      "requireHeadfulForExecute": true,
+      "stopOnRiskSignals": true,
+      "riskTextPatterns": ["unusual activity", "account locked", "请验证", "访问受限"]
+    }
   }
 }
 ```
@@ -217,7 +252,7 @@ del browser-data\state.json
 rm browser-data/state.json
 ```
 
-### 清理流程
+### 清理流程：推文、点赞、书签等内容
 
 1. 程序启动后会显示配置信息
 2. 倒计时 10 秒后开始执行（可按 Ctrl+C 取消）
@@ -231,19 +266,49 @@ rm browser-data/state.json
 4. 实时显示清理进度
 5. 完成后显示详细统计信息
 
+### 关注管理流程（推荐）
+
+关注清理建议不要直接打开 `deleteOptions.following` 一键执行，而是使用四步复核流程：
+
+> `deleteOptions.following=true` 的旧式直接取关路径默认会被拦截；如确需兼容旧流程，需要显式设置 `ALLOW_LEGACY_FOLLOWING_DELETE=true`。
+
+```bash
+# 1. 只读导出关注列表
+npm run start -- followings export
+
+# 2. 按 config.json 的 followingManagement.rules 生成候选/保留/复核文件
+npm run start -- followings classify --input data/followings/<runId>/followings.jsonl
+
+# 3. 人工从 candidates.jsonl 复制确认要取关的账号到 approved-unfollow.jsonl 后预览
+npm run start -- followings dry-run --input data/followings/<runId>/approved-unfollow.jsonl
+
+# 4. 慢速顺序执行最终确认名单
+npm run start -- followings execute --confirm-file data/followings/<runId>/approved-unfollow.jsonl
+```
+
+中断或达到 `maxUnfollowPerSession` 后，可继续：
+
+```bash
+npm run start -- followings resume --run-id <runId>
+```
+
+详细文件格式和配置说明见 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)。
+
 ### 安全建议
 
 - ⚠️ **谨慎操作**：删除的内容无法恢复
 - 🔒 **保护账号**：不要在公共环境使用
 - 🕒 **控制频率**：避免短时间内大量操作
 - 💾 **备份数据**：重要内容请提前备份
+- 🖥️ **稳定画像**：同一账号固定 `USER_DATA_DIR`、UA、视口、语言、时区，不要频繁随机切换
+- 🧯 **风险熔断**：关注取关默认有头执行，命中验证码/限制/账号异常文案或连续失败会停止
 
 ## 🛠️ 开发指南
 
 ### 项目结构
 
 ```
-twitter-auto-cleaner/
+x-account-cleaner/
 ├── src/
 │   ├── config/
 │   │   └── config.ts          # 配置管理
@@ -401,18 +466,18 @@ npm run clean         # 清理编译输出
 
 **A**: 当前版本不支持此功能，这是未来的改进方向。
 
-### Q: 新增的书签和取消关注功能如何使用？
+### Q: 新增的书签和关注管理功能如何使用？
 
 **A**: 在 `config.json` 中启用对应选项：
 ```json
 {
   "deleteOptions": {
     "bookmarks": true,   // 启用删除书签
-    "following": true    // 启用取消关注
+    "following": false   // 主账号建议保持 false，改用 followings 子命令复核后取关
   }
 }
 ```
-⚠️ 建议首次使用时先设置 `maxDeletePerSession: 10` 进行小范围测试。
+⚠️ 关注清理推荐先运行 `followings export` 和 `followings classify`。`approved-unfollow.jsonl` 默认是空文件，需要人工从 `candidates.jsonl` 复制确认账号后再执行；程序会拒绝直接执行 `candidates.jsonl` / `followings.jsonl` / `keep-list.jsonl`。
 
 ### Q: 取消关注会影响什么？
 
@@ -427,14 +492,14 @@ npm run clean         # 清理编译输出
 
 - [x] **取消点赞**：批量取消所有点赞 ✅ 已完成
 - [x] **删除书签**：批量删除所有书签 ✅ 已完成
-- [x] **取消关注**：批量取消关注用户 ✅ 已完成
+- [x] **关注管理**：导出、筛选、复核、确认名单取关 ✅ 已完成
 - [ ] **移除粉丝**：批量移除粉丝
 - [ ] **清理私信**：批量删除私信对话
 - [ ] **日期过滤**：支持按时间范围删除内容
 - [ ] **关键词过滤**：根据内容关键词选择性删除
 - [ ] **互动筛选**：保留高互动内容（点赞数、转发数）
-- [ ] **导出备份**：删除前导出内容为 JSON
-- [ ] **模拟进度预览**：运行前预览将要删除的内容
+- [x] **关注导出备份**：取关前导出关注列表 JSONL/CSV ✅ 已完成
+- [x] **关注模拟预览**：确认名单 dry-run 预览 ✅ 已完成
 
 ### 中期改进
 

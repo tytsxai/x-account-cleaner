@@ -17,7 +17,7 @@ Twitter 经常更新其网页结构，这会导致原有的元素选择器失效
 ## 📁 配置文件位置
 
 ```
-twitter-auto-cleaner/
+x-account-cleaner/
 ├── selectors.json          ← 独立的选择器配置文件
 ├── config.json             ← 主配置文件（也包含选择器，作为备用）
 └── src/

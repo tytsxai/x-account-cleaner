@@ -1,6 +1,6 @@
-# x-account-cleaner / twitter-auto-cleaner
+# x-account-cleaner / X Account Cleaner / twitter-auto-cleaner
 
-> Open-source Playwright-based desktop tool for **bulk-cleaning a Twitter (X) account**: delete every tweet, every reply, untag every retweet, unlike every liked tweet, remove every bookmark, and unfollow every account. Runs entirely on your own machine — automates the X web UI in a Chromium browser using your own logged-in session. Cross-platform (Windows / macOS / Linux), one-click install + start scripts, config-driven cleaning strategy, exponential-backoff retry, anti-detection browser fingerprinting, real-time progress tracking.
+> Open-source Playwright-based desktop tool for **cleaning an X / Twitter account locally**: bulk delete tweets and replies, undo retweets, unlike liked tweets, remove bookmarks, and manage following cleanup through export, classification, manual review, dry-run, and confirmed execution. Runs entirely on your own machine — automates the X web UI in a Chromium browser using your own logged-in session. Cross-platform (Windows / macOS / Linux), one-click install + start scripts, config-driven cleaning strategy, exponential-backoff retry, stable browser profile controls, run summaries, and progress tracking.
 
 This is the X / Twitter counterpart to projects like `bilibili-cleaner`. Use cases: pre-account-deletion data wipe, side account cleanup, account hand-over, privacy sweep.
 
@@ -18,7 +18,7 @@ This is the X / Twitter counterpart to projects like `bilibili-cleaner`. Use cas
 - **Untag every retweet**
 - **Unlike every liked tweet**
 - **Remove every bookmark**
-- **Unfollow every account**
+- **Following cleanup workflow**: export following list, classify candidates, manually review, dry-run, then execute a confirmed list
 - **Login management**: automated login + manual login fallback, persist session
 - **Config-driven**: customize cleaning strategy via config file
 - **Smart retry**: exponential backoff on transient failures
@@ -34,7 +34,7 @@ This is the X / Twitter counterpart to projects like `bilibili-cleaner`. Use cas
 - ❌ Recover deleted tweets — operations are irreversible
 - ❌ Touch DMs, lists, communities, or paid X features
 - ❌ Send anything to a third-party server — Playwright session lives on your machine
-- ❌ Work without Node.js — needs Node >= 16
+- ❌ Work without Node.js — needs Node >= 18.18
 
 ## Common questions
 
@@ -49,7 +49,7 @@ This is the X / Twitter counterpart to projects like `bilibili-cleaner`. Use cas
 
 - GitHub: https://github.com/tytsxai/x-account-cleaner (alias: twitter-auto-cleaner)
 - License: see LICENSE
-- Stack: Node.js >= 16 + Playwright + Chromium
+- Stack: Node.js >= 18.18 + Playwright + Chromium
 - Platforms: Windows, macOS, Linux
 - Author: tytsxai
 
