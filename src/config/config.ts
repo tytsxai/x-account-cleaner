@@ -1,7 +1,19 @@
 import dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Config, SelectorConfig, Selectors, SelectorsJsonConfig, URLs } from '../types';
+import {
+  Config,
+  FollowingExecutionConfig,
+  FollowingManagementConfig,
+  FollowingMode,
+  FollowingPlanConfig,
+  FollowingRulesConfig,
+  FollowingSafetyConfig,
+  SelectorConfig,
+  Selectors,
+  SelectorsJsonConfig,
+  URLs,
+} from '../types';
 import { log } from '../utils/logger';
 import { validateSelectors } from '../utils/selector';
 
@@ -16,11 +28,70 @@ export interface EnvConfig {
   twitterPassword: string;
   headless: boolean;
   browserType: BrowserType;
+  userAgent: string;
+  viewportWidth: number;
+  viewportHeight: number;
+  deviceScaleFactor: number;
+  locale: string;
+  timezoneId: string;
   logLevel: LogLevel;
   logToFile: boolean;
   failOnErrors: boolean;
+  allowLegacyFollowingDelete: boolean;
   userDataDir: string;
 }
+
+const DEFAULT_FOLLOWING_RULES: FollowingRulesConfig = {
+  keepHandles: [],
+  dropHandles: [],
+  keepKeywords: [],
+  dropKeywords: [
+    'airdrop',
+    'giveaway',
+    'casino',
+    'bet',
+    '博彩',
+    '空投',
+    '抽奖',
+    '接推广',
+    '商务合作',
+  ],
+  lowInfoCandidate: true,
+};
+
+const DEFAULT_FOLLOWING_MANAGEMENT: FollowingManagementConfig = {
+  enabled: false,
+  outputDir: 'data/followings',
+  defaultMode: 'export',
+  rules: DEFAULT_FOLLOWING_RULES,
+  execution: {
+    minDelayMs: 6000,
+    maxDelayMs: 14000,
+    maxUnfollowPerSession: 50,
+    requireConfirmFile: true,
+    maxConsecutiveFailures: 3,
+    cooldownEveryActions: 20,
+    cooldownMs: 300000,
+  },
+  safety: {
+    requireHeadfulForExecute: true,
+    stopOnRiskSignals: true,
+    riskTextPatterns: [
+      'unusual activity',
+      'temporarily restricted',
+      'temporarily limited',
+      'rate limit',
+      'account locked',
+      'account suspended',
+      'verify your account',
+      '账号已锁定',
+      '账号已暂停',
+      '异常活动',
+      '请验证',
+      '访问受限',
+    ],
+  },
+};
 
 function parseEnvBoolean(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined) return defaultValue;
@@ -28,6 +99,12 @@ function parseEnvBoolean(value: string | undefined, defaultValue: boolean): bool
   if (['true', '1', 'yes', 'on'].includes(lower)) return true;
   if (['false', '0', 'no', 'off'].includes(lower)) return false;
   return defaultValue;
+}
+
+function parseEnvNumber(value: string | undefined, defaultValue: number): number {
+  if (value === undefined) return defaultValue;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
 }
 
 function validateEnvConfig(env: EnvConfig): void {
@@ -45,6 +122,25 @@ function validateEnvConfig(env: EnvConfig): void {
 
   if (!env.userDataDir || typeof env.userDataDir !== 'string') {
     throw new Error('USER_DATA_DIR 不能为空');
+  }
+
+  if (!Number.isInteger(env.viewportWidth) || env.viewportWidth < 320) {
+    throw new Error('BROWSER_VIEWPORT_WIDTH 必须是 >= 320 的整数');
+  }
+  if (!Number.isInteger(env.viewportHeight) || env.viewportHeight < 320) {
+    throw new Error('BROWSER_VIEWPORT_HEIGHT 必须是 >= 320 的整数');
+  }
+  if (!Number.isFinite(env.deviceScaleFactor) || env.deviceScaleFactor <= 0) {
+    throw new Error('BROWSER_DEVICE_SCALE_FACTOR 必须大于 0');
+  }
+  if (!env.locale || typeof env.locale !== 'string') {
+    throw new Error('BROWSER_LOCALE 不能为空');
+  }
+  if (!env.timezoneId || typeof env.timezoneId !== 'string') {
+    throw new Error('BROWSER_TIMEZONE_ID 不能为空');
+  }
+  if (!env.userAgent || typeof env.userAgent !== 'string') {
+    throw new Error('BROWSER_USER_AGENT 不能为空');
   }
 }
 
@@ -186,7 +282,128 @@ export function loadConfig(): Config {
     };
   }
 
+  config.followingManagement = normalizeFollowingManagement(config);
+  config.followingPlan = normalizeFollowingPlan(config.followingPlan);
+
   return config;
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '');
+}
+
+function normalizeFollowingMode(value: unknown): FollowingMode {
+  const modes: FollowingMode[] = ['export', 'classify', 'dry-run', 'execute'];
+  return typeof value === 'string' && modes.includes(value as FollowingMode)
+    ? (value as FollowingMode)
+    : DEFAULT_FOLLOWING_MANAGEMENT.defaultMode;
+}
+
+function normalizeFollowingPlan(
+  plan: FollowingPlanConfig | undefined
+): FollowingPlanConfig | undefined {
+  if (!plan) {
+    return undefined;
+  }
+
+  return {
+    mode: normalizeFollowingMode(plan.mode),
+    input: typeof plan.input === 'string' && plan.input.trim() !== '' ? plan.input : undefined,
+    confirmFile:
+      typeof plan.confirmFile === 'string' && plan.confirmFile.trim() !== ''
+        ? plan.confirmFile
+        : undefined,
+    runId: typeof plan.runId === 'string' && plan.runId.trim() !== '' ? plan.runId : undefined,
+  };
+}
+
+function normalizeFollowingRules(config: Config): FollowingRulesConfig {
+  const managementRules = config.followingManagement?.rules;
+  const cleanupRules = config.cleanupRules?.following;
+  const merged = {
+    ...DEFAULT_FOLLOWING_RULES,
+    ...(cleanupRules || {}),
+    ...(managementRules || {}),
+  };
+
+  return {
+    keepHandles: normalizeStringArray(merged.keepHandles),
+    dropHandles: normalizeStringArray(merged.dropHandles),
+    keepKeywords: normalizeStringArray(merged.keepKeywords),
+    dropKeywords: normalizeStringArray(merged.dropKeywords),
+    lowInfoCandidate:
+      typeof merged.lowInfoCandidate === 'boolean'
+        ? merged.lowInfoCandidate
+        : DEFAULT_FOLLOWING_RULES.lowInfoCandidate,
+  };
+}
+
+function normalizeFollowingManagement(config: Config): FollowingManagementConfig {
+  const current = config.followingManagement || ({} as Partial<FollowingManagementConfig>);
+  const execution = (current.execution || {}) as Partial<FollowingExecutionConfig>;
+  const safety = (current.safety || {}) as Partial<FollowingSafetyConfig>;
+  const riskTextPatterns = normalizeStringArray(safety.riskTextPatterns);
+
+  return {
+    enabled:
+      typeof current.enabled === 'boolean' ? current.enabled : DEFAULT_FOLLOWING_MANAGEMENT.enabled,
+    outputDir:
+      typeof current.outputDir === 'string' && current.outputDir.trim() !== ''
+        ? current.outputDir
+        : DEFAULT_FOLLOWING_MANAGEMENT.outputDir,
+    defaultMode: normalizeFollowingMode(current.defaultMode),
+    rules: normalizeFollowingRules(config),
+    execution: {
+      minDelayMs:
+        typeof execution.minDelayMs === 'number' && Number.isFinite(execution.minDelayMs)
+          ? execution.minDelayMs
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.minDelayMs,
+      maxDelayMs:
+        typeof execution.maxDelayMs === 'number' && Number.isFinite(execution.maxDelayMs)
+          ? execution.maxDelayMs
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.maxDelayMs,
+      maxUnfollowPerSession:
+        typeof execution.maxUnfollowPerSession === 'number' &&
+        Number.isFinite(execution.maxUnfollowPerSession)
+          ? execution.maxUnfollowPerSession
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.maxUnfollowPerSession,
+      requireConfirmFile:
+        typeof execution.requireConfirmFile === 'boolean'
+          ? execution.requireConfirmFile
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.requireConfirmFile,
+      maxConsecutiveFailures:
+        typeof execution.maxConsecutiveFailures === 'number' &&
+        Number.isFinite(execution.maxConsecutiveFailures)
+          ? execution.maxConsecutiveFailures
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.maxConsecutiveFailures,
+      cooldownEveryActions:
+        typeof execution.cooldownEveryActions === 'number' &&
+        Number.isFinite(execution.cooldownEveryActions)
+          ? execution.cooldownEveryActions
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.cooldownEveryActions,
+      cooldownMs:
+        typeof execution.cooldownMs === 'number' && Number.isFinite(execution.cooldownMs)
+          ? execution.cooldownMs
+          : DEFAULT_FOLLOWING_MANAGEMENT.execution.cooldownMs,
+    },
+    safety: {
+      requireHeadfulForExecute:
+        typeof safety.requireHeadfulForExecute === 'boolean'
+          ? safety.requireHeadfulForExecute
+          : DEFAULT_FOLLOWING_MANAGEMENT.safety.requireHeadfulForExecute,
+      stopOnRiskSignals:
+        typeof safety.stopOnRiskSignals === 'boolean'
+          ? safety.stopOnRiskSignals
+          : DEFAULT_FOLLOWING_MANAGEMENT.safety.stopOnRiskSignals,
+      riskTextPatterns:
+        riskTextPatterns.length > 0
+          ? riskTextPatterns
+          : DEFAULT_FOLLOWING_MANAGEMENT.safety.riskTextPatterns,
+    },
+  };
 }
 
 /**
@@ -198,9 +415,17 @@ export function getEnvConfig(): EnvConfig {
     twitterPassword: '',
     headless: false,
     browserType: 'chromium',
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    viewportWidth: 1512,
+    viewportHeight: 982,
+    deviceScaleFactor: 2,
+    locale: 'zh-CN',
+    timezoneId: 'Asia/Shanghai',
     logLevel: 'info',
     logToFile: false,
     failOnErrors: false,
+    allowLegacyFollowingDelete: false,
     userDataDir: './browser-data',
   };
 
@@ -225,9 +450,26 @@ export function getEnvConfig(): EnvConfig {
     twitterPassword: process.env.TWITTER_PASSWORD ?? defaults.twitterPassword,
     headless: parseEnvBoolean(process.env.HEADLESS, defaults.headless),
     browserType,
+    userAgent: process.env.BROWSER_USER_AGENT ?? defaults.userAgent,
+    viewportWidth: Math.floor(
+      parseEnvNumber(process.env.BROWSER_VIEWPORT_WIDTH, defaults.viewportWidth)
+    ),
+    viewportHeight: Math.floor(
+      parseEnvNumber(process.env.BROWSER_VIEWPORT_HEIGHT, defaults.viewportHeight)
+    ),
+    deviceScaleFactor: parseEnvNumber(
+      process.env.BROWSER_DEVICE_SCALE_FACTOR,
+      defaults.deviceScaleFactor
+    ),
+    locale: process.env.BROWSER_LOCALE ?? defaults.locale,
+    timezoneId: process.env.BROWSER_TIMEZONE_ID ?? defaults.timezoneId,
     logLevel,
     logToFile: parseEnvBoolean(process.env.LOG_TO_FILE, defaults.logToFile),
     failOnErrors: parseEnvBoolean(process.env.FAIL_ON_ERRORS, defaults.failOnErrors),
+    allowLegacyFollowingDelete: parseEnvBoolean(
+      process.env.ALLOW_LEGACY_FOLLOWING_DELETE,
+      defaults.allowLegacyFollowingDelete
+    ),
     userDataDir: process.env.USER_DATA_DIR ?? defaults.userDataDir,
   };
 
@@ -267,9 +509,10 @@ export function validateConfig(config: Config): void {
 
   // 验证删除选项
   const hasDeleteOption = Object.values(config.deleteOptions).some((v) => v === true);
-  if (!hasDeleteOption) {
+  const hasFollowingManagement = config.followingManagement?.enabled === true;
+  if (!hasDeleteOption && !hasFollowingManagement) {
     throw new Error(
-      '至少需要启用一种删除选项（tweets/retweets/replies/likes/bookmarks/following）'
+      '至少需要启用一种删除选项（tweets/retweets/replies/likes/bookmarks/following）或 followingManagement.enabled'
     );
   }
 
@@ -370,6 +613,10 @@ export function validateConfig(config: Config): void {
     requiredSelectors.add('followingButton');
     requiredSelectors.add('unfollowConfirm');
   }
+  if (config.followingManagement?.enabled) {
+    requiredSelectors.add('followingButton');
+    requiredSelectors.add('unfollowConfirm');
+  }
 
   const missingSelectors = Array.from(requiredSelectors).filter(
     (key) => config.selectors[key] === undefined
@@ -400,6 +647,9 @@ export function validateConfig(config: Config): void {
   if (config.deleteOptions.following) {
     requiredUrls.add('following');
   }
+  if (config.followingManagement?.enabled) {
+    requiredUrls.add('following');
+  }
 
   const missingUrls = Array.from(requiredUrls).filter((key) => !config.urls[key]);
   if (missingUrls.length > 0) {
@@ -416,6 +666,46 @@ export function validateConfig(config: Config): void {
   });
   if (invalidUsernameUrls.length > 0) {
     throw new Error(`以下 URL 必须包含 {username} 占位符: ${invalidUsernameUrls.join(', ')}`);
+  }
+
+  if (config.followingManagement) {
+    const { execution, safety } = config.followingManagement;
+    if (execution.minDelayMs < 0 || execution.maxDelayMs < 0) {
+      throw new Error('followingManagement.execution 延迟不能小于 0');
+    }
+    if (execution.maxDelayMs < execution.minDelayMs) {
+      throw new Error('followingManagement.execution.maxDelayMs 不能小于 minDelayMs');
+    }
+    if (
+      !Number.isInteger(execution.maxUnfollowPerSession) ||
+      execution.maxUnfollowPerSession <= 0
+    ) {
+      throw new Error('followingManagement.execution.maxUnfollowPerSession 必须是正整数');
+    }
+    if (
+      !Number.isInteger(execution.maxConsecutiveFailures) ||
+      execution.maxConsecutiveFailures <= 0
+    ) {
+      throw new Error('followingManagement.execution.maxConsecutiveFailures 必须是正整数');
+    }
+    if (!Number.isInteger(execution.cooldownEveryActions) || execution.cooldownEveryActions < 0) {
+      throw new Error('followingManagement.execution.cooldownEveryActions 必须是 >= 0 的整数');
+    }
+    if (!Number.isFinite(execution.cooldownMs) || execution.cooldownMs < 0) {
+      throw new Error('followingManagement.execution.cooldownMs 不能小于 0');
+    }
+    if (typeof execution.requireConfirmFile !== 'boolean') {
+      throw new Error('followingManagement.execution.requireConfirmFile 必须是 boolean');
+    }
+    if (typeof safety.requireHeadfulForExecute !== 'boolean') {
+      throw new Error('followingManagement.safety.requireHeadfulForExecute 必须是 boolean');
+    }
+    if (typeof safety.stopOnRiskSignals !== 'boolean') {
+      throw new Error('followingManagement.safety.stopOnRiskSignals 必须是 boolean');
+    }
+    if (!Array.isArray(safety.riskTextPatterns)) {
+      throw new Error('followingManagement.safety.riskTextPatterns 必须是字符串数组');
+    }
   }
 }
 

@@ -46,16 +46,25 @@ export class BrowserManager {
         '--disable-blink-features=AutomationControlled',
         '--no-sandbox',
         '--disable-setuid-sandbox',
+        `--window-size=${envConfig.viewportWidth},${envConfig.viewportHeight}`,
       ],
     });
 
-    // 创建持久化上下文（保存登录状态）
+    // 创建稳定浏览器上下文：同一账号尽量长期使用同一 USER_DATA_DIR + 指纹参数
     this.context = await this.browser.newContext({
-      viewport: { width: 1280, height: 720 },
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      locale: 'zh-CN',
-      timezoneId: 'Asia/Shanghai',
+      viewport: { width: envConfig.viewportWidth, height: envConfig.viewportHeight },
+      screen: { width: envConfig.viewportWidth, height: envConfig.viewportHeight },
+      deviceScaleFactor: envConfig.deviceScaleFactor,
+      userAgent: envConfig.userAgent,
+      locale: envConfig.locale,
+      timezoneId: envConfig.timezoneId,
+      hasTouch: false,
+      isMobile: false,
+      colorScheme: 'light',
+      reducedMotion: 'reduce',
+      extraHTTPHeaders: {
+        'Accept-Language': `${envConfig.locale},zh;q=0.9,en-US;q=0.8,en;q=0.7`,
+      },
       storageState: this.getStorageStatePath(),
     });
 
@@ -66,22 +75,44 @@ export class BrowserManager {
     this.page.setDefaultTimeout(30000);
     this.page.setDefaultNavigationTimeout(30000);
 
-    // 添加反检测脚本
-    await this.page.addInitScript(() => {
-      // 覆盖 webdriver 属性
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => false,
-      });
+    // 稳定设备画像：保持一致，不做每次运行随机切换，降低异常指纹漂移。
+    await this.page.addInitScript(
+      ({ languages, platform, hardwareConcurrency, deviceMemory }) => {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
 
-      // 覆盖 plugins 和 languages
-      Object.defineProperty(navigator, 'plugins', {
-        get: () => [1, 2, 3, 4, 5],
-      });
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [1, 2, 3, 4, 5],
+        });
 
-      Object.defineProperty(navigator, 'languages', {
-        get: () => ['zh-CN', 'zh', 'en-US', 'en'],
-      });
-    });
+        Object.defineProperty(navigator, 'languages', {
+          get: () => languages,
+        });
+
+        Object.defineProperty(navigator, 'platform', {
+          get: () => platform,
+        });
+
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+          get: () => hardwareConcurrency,
+        });
+
+        Object.defineProperty(navigator, 'deviceMemory', {
+          get: () => deviceMemory,
+        });
+      },
+      {
+        languages: [envConfig.locale, 'zh', 'en-US', 'en'],
+        platform: 'MacIntel',
+        hardwareConcurrency: 8,
+        deviceMemory: 8,
+      }
+    );
+
+    log.info(
+      `浏览器画像: viewport=${envConfig.viewportWidth}x${envConfig.viewportHeight}, dpr=${envConfig.deviceScaleFactor}, locale=${envConfig.locale}, timezone=${envConfig.timezoneId}, userDataDir=${envConfig.userDataDir}`
+    );
 
     log.success('浏览器启动成功');
   }

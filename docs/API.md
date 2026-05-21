@@ -140,6 +140,64 @@ const stats = deleter.getStats();
 
 ---
 
+### Following Management
+
+关注管理模块位于 `src/core/following-management.ts`，用于把关注清理拆成导出、筛选、复核、确认执行四步。
+
+#### `FollowingCollector`
+
+```typescript
+const collector = new FollowingCollector(page, config, username);
+const result = await collector.export();
+```
+
+输出：
+- `data/followings/<runId>/followings.jsonl`
+- `data/followings/<runId>/followings.csv`
+
+#### `FollowingClassifier`
+
+```typescript
+const classifier = new FollowingClassifier(config);
+const result = classifier.classify('data/followings/<runId>/followings.jsonl');
+```
+
+输出：
+- `candidates.jsonl`
+- `keep-list.jsonl`
+- `review.csv`
+- `approved-unfollow.jsonl`（默认空文件，需要人工写入最终确认名单）
+
+#### `FollowingExecutor`
+
+```typescript
+const executor = new FollowingExecutor(page, config, username);
+const preview = executor.dryRun('data/followings/<runId>/approved-unfollow.jsonl');
+const result = await executor.execute('data/followings/<runId>/approved-unfollow.jsonl');
+const resumed = await executor.resume('<runId>');
+```
+
+执行器只读取确认名单，按 handle 在页面上重新匹配用户卡片后点击取关，并写入 `session.json`。默认会拒绝直接执行 `candidates.jsonl`、`followings.jsonl`、`keep-list.jsonl`，也会拒绝空确认名单。
+
+安全行为：
+- `safety.requireHeadfulForExecute=true` 时，`execute` 会拒绝 `HEADLESS=true`
+- `safety.stopOnRiskSignals=true` 时，命中登录页、账号访问限制页或风险文案会停止
+- `execution.maxConsecutiveFailures` 控制连续失败熔断
+- `execution.cooldownEveryActions` / `execution.cooldownMs` 控制批次冷却
+- `execution.requireConfirmFile=true` 时，确认文件名必须包含 `approved` 或 `confirm`
+
+#### CLI
+
+```bash
+npm run start -- followings export
+npm run start -- followings classify --input data/followings/<runId>/followings.jsonl
+npm run start -- followings dry-run --input data/followings/<runId>/approved-unfollow.jsonl
+npm run start -- followings execute --confirm-file data/followings/<runId>/approved-unfollow.jsonl
+npm run start -- followings resume --run-id <runId>
+```
+
+---
+
 ### SelectorHelper
 
 元素选择器工具类。
@@ -439,9 +497,6 @@ class HookedDeleter extends TwitterDeleter {
 ---
 
 更多详细信息请查看源代码中的 JSDoc 注释。
-
-
-
 
 
 

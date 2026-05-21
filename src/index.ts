@@ -3,6 +3,11 @@
 import { BrowserManager } from './core/browser';
 import { LoginManager } from './core/login';
 import { TwitterDeleter } from './core/deleter';
+import {
+  FollowingClassifier,
+  FollowingCollector,
+  FollowingExecutor,
+} from './core/following-management';
 import { getEnvConfig, loadConfig, validateConfig } from './config/config';
 import { initLogger, log } from './utils/logger';
 import { acquireRunLock, RunLock } from './utils/run-lock';
@@ -29,10 +34,16 @@ type RunContext = {
   env?: {
     headless: boolean;
     browserType: string;
+    userAgent: string;
+    viewport: string;
+    deviceScaleFactor: number;
+    locale: string;
+    timezoneId: string;
     logLevel: string;
     logToFile: boolean;
     failOnErrors: boolean;
     userDataDir: string;
+    allowLegacyFollowingDelete: boolean;
   };
   lock?: {
     path: string;
@@ -47,6 +58,14 @@ type RunContext = {
   };
   stats?: DeleteStats;
   error?: string;
+};
+
+type FollowingCommand = 'export' | 'classify' | 'dry-run' | 'execute' | 'resume';
+
+type ParsedArgs = {
+  command: string | null;
+  subcommand: string | null;
+  options: Map<string, string | boolean>;
 };
 
 const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random()
@@ -93,9 +112,15 @@ function buildEnvSummary() {
   return {
     headless: envConfig.headless,
     browserType: envConfig.browserType,
+    userAgent: envConfig.userAgent,
+    viewport: `${envConfig.viewportWidth}x${envConfig.viewportHeight}`,
+    deviceScaleFactor: envConfig.deviceScaleFactor,
+    locale: envConfig.locale,
+    timezoneId: envConfig.timezoneId,
     logLevel: envConfig.logLevel,
     logToFile: envConfig.logToFile,
     failOnErrors: envConfig.failOnErrors,
+    allowLegacyFollowingDelete: envConfig.allowLegacyFollowingDelete,
     userDataDir: envConfig.userDataDir,
   };
 }
@@ -121,6 +146,190 @@ function getSelectorsMetadata() {
       error: formatError(error),
     };
   }
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
+  const options = new Map<string, string | boolean>();
+  const positionals: string[] = [];
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('--')) {
+      const withoutPrefix = arg.slice(2);
+      const [key, inlineValue] = withoutPrefix.split('=', 2);
+      if (inlineValue !== undefined) {
+        options.set(key, inlineValue);
+        continue;
+      }
+      const next = argv[i + 1];
+      if (next && !next.startsWith('--')) {
+        options.set(key, next);
+        i++;
+      } else {
+        options.set(key, true);
+      }
+    } else {
+      positionals.push(arg);
+    }
+  }
+
+  return {
+    command: positionals[0] || null,
+    subcommand: positionals[1] || null,
+    options,
+  };
+}
+
+function getStringOption(args: ParsedArgs, name: string): string | null {
+  const value = args.options.get(name);
+  return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
+function assertFollowingCommand(value: string | null): FollowingCommand {
+  const commands: FollowingCommand[] = ['export', 'classify', 'dry-run', 'execute', 'resume'];
+  if (!value || !commands.includes(value as FollowingCommand)) {
+    throw new Error(`未知 followings 子命令: ${value || '(空)'}。可用: ${commands.join(', ')}`);
+  }
+  return value as FollowingCommand;
+}
+
+async function prepareLoggedInPage(
+  config: Config
+): Promise<{ page: ReturnType<BrowserManager['getPage']>; username: string }> {
+  const envConfig = getEnvConfig();
+  runLock = acquireRunLock(runId, envConfig.userDataDir);
+  runContext.lock = { path: runLock.lockPath, userDataDir: envConfig.userDataDir };
+
+  browserManager = new BrowserManager();
+  await browserManager.initialize();
+  const page = browserManager.getPage();
+
+  const loginManager = new LoginManager(page);
+  const loginResult = await loginManager.login();
+  if (!loginResult.success) {
+    throw new Error(loginResult.message || '登录失败');
+  }
+
+  await browserManager.saveState();
+
+  let username = await loginManager.getUsername();
+  if (!username) {
+    log.warn('无法自动获取用户名，请在浏览器中导航到你的个人主页');
+    log.info('等待 10 秒...');
+    await sleep(10000);
+    username = await loginManager.getUsername();
+  }
+
+  if (!username) {
+    throw new Error('无法获取用户名');
+  }
+
+  runContext.username = username;
+  runContext.config = {
+    deleteOptions: config.deleteOptions,
+    executionConfig: config.executionConfig,
+    retryConfig: config.retryConfig,
+    urls: config.urls,
+  };
+  runContext.selectors = getSelectorsMetadata();
+  log.success(`当前用户: @${username}`);
+
+  return { page, username };
+}
+
+async function runFollowingsCommand(parsedArgs: ParsedArgs): Promise<void> {
+  initLogger();
+  printWelcome();
+
+  const config = loadConfig();
+  if (config.followingManagement) {
+    config.followingManagement.enabled = true;
+  }
+  validateConfig(config);
+  const subcommand = parsedArgs.subcommand
+    ? assertFollowingCommand(parsedArgs.subcommand)
+    : config.followingPlan?.mode || config.followingManagement?.defaultMode || 'export';
+
+  runContext.env = buildEnvSummary();
+
+  if (subcommand === 'classify') {
+    const input = getStringOption(parsedArgs, 'input') || config.followingPlan?.input || null;
+    if (!input) {
+      throw new Error('followings classify 需要 --input <followings.jsonl>');
+    }
+    const result = new FollowingClassifier(config).classify(input);
+    log.success(
+      `分类完成: total=${result.total}, candidates=${result.candidates}, keep=${result.keep}`
+    );
+    runContext.status = 'completed';
+    return;
+  }
+
+  if (subcommand === 'dry-run') {
+    const input =
+      getStringOption(parsedArgs, 'input') ||
+      config.followingPlan?.input ||
+      config.followingPlan?.confirmFile ||
+      null;
+    if (!input) {
+      throw new Error('followings dry-run 需要 --input <approved-unfollow.jsonl>');
+    }
+    const session = new FollowingExecutor({} as never, config, 'dry-run').dryRun(input);
+    log.info(`dry-run 将处理 ${session.items.length} 个账号，不会打开浏览器或点击取关`);
+    for (const item of session.items) {
+      log.info(`[DRY_RUN_UNFOLLOW] handle=${item.handle} name="${item.displayName || ''}"`);
+    }
+    runContext.status = 'completed';
+    return;
+  }
+
+  const confirmFile =
+    subcommand === 'execute'
+      ? getStringOption(parsedArgs, 'confirm-file') || config.followingPlan?.confirmFile || null
+      : null;
+  if (subcommand === 'execute' && !confirmFile) {
+    throw new Error('followings execute 必须提供 --confirm-file <approved-unfollow.jsonl>');
+  }
+
+  const resumeRunId =
+    subcommand === 'resume'
+      ? getStringOption(parsedArgs, 'run-id') || config.followingPlan?.runId || null
+      : null;
+  if (subcommand === 'resume' && !resumeRunId) {
+    throw new Error('followings resume 需要 --run-id <runId>');
+  }
+
+  const { page, username } = await prepareLoggedInPage(config);
+
+  if (subcommand === 'export') {
+    const requestedRunId = getStringOption(parsedArgs, 'run-id') || config.followingPlan?.runId;
+    const result = await new FollowingCollector(page, config, username).export(requestedRunId);
+    log.success(`导出完成: ${result.count} 个关注账号，runId=${result.runId}`);
+    runContext.status = 'completed';
+    return;
+  }
+
+  if (subcommand === 'execute') {
+    if (!confirmFile) {
+      throw new Error('followings execute 必须提供 --confirm-file <approved-unfollow.jsonl>');
+    }
+    const runId = getStringOption(parsedArgs, 'run-id') || config.followingPlan?.runId;
+    const result = await new FollowingExecutor(page, config, username).execute(confirmFile, runId);
+    log.success(
+      `执行状态已保存: ${result.sessionPath} success=${result.session.success} failed=${result.session.failed} pending=${result.session.items.length - result.session.processed}`
+    );
+    runContext.status = 'completed';
+    return;
+  }
+
+  if (!resumeRunId) {
+    throw new Error('followings resume 需要 --run-id <runId>');
+  }
+  const result = await new FollowingExecutor(page, config, username).resume(resumeRunId);
+  log.success(
+    `恢复执行状态已保存: ${result.sessionPath} success=${result.session.success} failed=${result.session.failed} pending=${result.session.items.length - result.session.processed}`
+  );
+  runContext.status = 'completed';
 }
 
 async function writeRunSummary(exitCode: number): Promise<void> {
@@ -257,6 +466,11 @@ async function main() {
     const config = loadConfig();
     validateConfig(config);
     log.success('配置加载成功');
+    if (config.deleteOptions.following && !envConfig.allowLegacyFollowingDelete) {
+      throw new Error(
+        '为降低账号风险，已默认禁止 deleteOptions.following 旧式直接取关。请使用 `npm run start -- followings export/classify/dry-run/execute`；如确需旧路径，设置 ALLOW_LEGACY_FOLLOWING_DELETE=true。'
+      );
+    }
     runContext.config = {
       deleteOptions: config.deleteOptions,
       executionConfig: config.executionConfig,
@@ -425,9 +639,23 @@ process.on('SIGTERM', () => {
 });
 
 // 启动程序
-void main().catch((error) => {
-  if (isCancellationError(error)) {
-    return;
-  }
-  void shutdown(1, '启动失败:', error);
-});
+const parsedArgs = parseArgs(process.argv.slice(2));
+const entrypoint = parsedArgs.command === 'followings' ? runFollowingsCommand(parsedArgs) : main();
+
+void entrypoint
+  .then(async () => {
+    if (parsedArgs.command === 'followings') {
+      if (runContext.status === 'running') {
+        runContext.status = 'completed';
+      }
+      await writeRunSummary(0);
+      await closeBrowser();
+      releaseRunLock();
+    }
+  })
+  .catch((error) => {
+    if (isCancellationError(error)) {
+      return;
+    }
+    void shutdown(1, '启动失败:', error);
+  });

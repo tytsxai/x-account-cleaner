@@ -5,14 +5,15 @@
 ## 目录结构
 
 ```
-twitter-auto-cleaner/
+x-account-cleaner/
 ├── src/                      # 源代码
 │   ├── config/              # 配置管理
 │   │   └── config.ts        # 配置加载和验证
 │   ├── core/                # 核心功能
 │   │   ├── browser.ts       # 浏览器管理
 │   │   ├── login.ts         # 登录逻辑
-│   │   └── deleter.ts       # 删除逻辑
+│   │   ├── deleter.ts       # 删除逻辑
+│   │   └── following-management.ts # 关注导出/筛选/确认执行
 │   ├── utils/               # 工具函数
 │   │   ├── logger.ts        # 日志系统
 │   │   ├── retry.ts         # 重试机制
@@ -42,7 +43,8 @@ twitter-auto-cleaner/
 
 **流程**：
 ```
-启动 → 加载配置 → 初始化浏览器 → 登录 → 删除 → 清理退出
+默认清理：启动 → 加载配置 → 初始化浏览器 → 登录 → 删除 → 清理退出
+关注管理：启动 → 加载配置 → 导出/筛选/预览/执行 → 写入数据文件与 session → 清理退出
 ```
 
 ### 2. 核心层（Core Layer）
@@ -85,6 +87,23 @@ twitter-auto-cleaner/
 - `deleteContentType()`: 删除指定类型
 - `deleteBatch()`: 批量删除
 - `deleteSingleTweet()`: 删除单条
+
+#### FollowingCollector / FollowingClassifier / FollowingExecutor (`src/core/following-management.ts`)
+
+**职责**：
+- 只读导出关注列表快照
+- 按本地规则生成候选取关名单、保留名单和复核 CSV
+- 生成空的 `approved-unfollow.jsonl`，要求人工填入最终确认名单
+- 只根据 `approved-unfollow.jsonl` 执行确认过的取关，并拒绝直接执行候选/导出/保留名单
+- 原子写入 `session.json`，支持中断后恢复
+- 执行期风险门禁：有头模式要求、风险文案/限制页检测、连续失败熔断、批次冷却
+
+**关键方法**：
+- `FollowingCollector.export()`: 写出 `followings.jsonl` / `followings.csv`
+- `FollowingClassifier.classify()`: 写出 `candidates.jsonl` / `keep-list.jsonl` / `review.csv`
+- `FollowingExecutor.dryRun()`: 预览确认名单，不打开浏览器、不点击取关
+- `FollowingExecutor.execute()`: 按 handle 精确匹配用户卡片后慢速取关
+- `FollowingExecutor.resume()`: 从 `session.json` 继续执行
 
 ### 3. 工具层（Utility Layer）
 
@@ -157,6 +176,28 @@ twitter-auto-cleaner/
 结果输出（统计信息）
 ```
 
+关注管理数据流：
+
+```
+X 关注页面
+    ↓
+FollowingCollector
+    ↓
+followings.jsonl / followings.csv
+    ↓
+FollowingClassifier + followingManagement.rules
+    ↓
+candidates.jsonl / keep-list.jsonl / review.csv
+    ↓
+人工确认 approved-unfollow.jsonl
+    ↓
+FollowingExecutor
+    ↓
+session.json / [UNFOLLOW_TARGET] 日志
+```
+
+设备画像由 `BrowserManager` 统一设置，来自 `.env` 的 `BROWSER_USER_AGENT`、视口、DPR、语言和时区。原则是同一账号长期保持稳定画像，而不是每次运行随机变化。
+
 ## 设计模式
 
 ### 1. 单一职责原则（SRP）
@@ -165,6 +206,7 @@ twitter-auto-cleaner/
 - `BrowserManager` - 浏览器管理
 - `LoginManager` - 登录管理
 - `TwitterDeleter` - 删除管理
+- `FollowingCollector` / `FollowingClassifier` / `FollowingExecutor` - 关注管理
 
 ### 2. 依赖注入
 
@@ -394,10 +436,6 @@ interface Config {
 ✅ **错误恢复**：完善的重试和日志
 
 这种架构适合当前规模，也为未来扩展预留了空间。
-
-
-
-
 
 
 

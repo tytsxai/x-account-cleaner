@@ -108,7 +108,9 @@ function testSelectorsConfig() {
         'unlikeButton',
         'removeBookmarkButton',
         'followingButton',
+        'unfollowButton',
         'unfollowConfirm',
+        'userCell',
     ];
 
     let selectors = {};

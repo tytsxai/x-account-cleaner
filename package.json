@@ -1,15 +1,15 @@
 {
-  "name": "twitter-auto-cleaner",
+  "name": "x-account-cleaner",
   "version": "1.0.0",
-  "description": "Playwright 自动化清理 X (Twitter) 内容：删除推文/回复/转推/点赞/书签/取消关注。",
+  "description": "本地运行的 X / Twitter 账号清理工具：批量删除推文、回复、转推、点赞、书签，并通过导出、复核、确认名单安全管理关注取关。",
   "main": "dist/index.js",
-  "homepage": "https://github.com/tytsxai/twitter-auto-cleaner#readme",
+  "homepage": "https://github.com/tytsxai/x-account-cleaner#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tytsxai/twitter-auto-cleaner.git"
+    "url": "git+https://github.com/tytsxai/x-account-cleaner.git"
   },
   "bugs": {
-    "url": "https://github.com/tytsxai/twitter-auto-cleaner/issues"
+    "url": "https://github.com/tytsxai/x-account-cleaner/issues"
   },
   "scripts": {
     "start": "ts-node src/index.ts",
@@ -23,11 +23,21 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "clean": "rimraf dist",
     "test:selectors": "node scripts/test-selectors.js",
-    "verify": "npm run lint && npm run format:check && npm run test:selectors"
+    "test:following": "node scripts/test-following-management.js",
+    "verify": "npm run build && npm run lint && npm run format:check && npm run test:selectors && npm run test:following"
   },
   "keywords": [
     "twitter",
     "x",
+    "x-account-cleaner",
+    "twitter-cleaner",
+    "twitter-auto-cleaner",
+    "account-cleaner",
+    "tweet-delete",
+    "bulk-delete-tweets",
+    "bulk-unlike",
+    "bulk-unfollow",
+    "bookmark-cleaner",
     "automation",
     "cleaner",
     "playwright"
@@ -55,7 +65,7 @@
     "typescript": "^5.3.2"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.18.0"
   },
   "overrides": {
     "ajv": "^6.14.0",

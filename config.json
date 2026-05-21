@@ -21,6 +21,48 @@
     "retryDelay": 5000,
     "exponentialBackoff": true
   },
+  "followingPlan": {
+    "mode": "export"
+  },
+  "followingManagement": {
+    "enabled": false,
+    "outputDir": "data/followings",
+    "defaultMode": "export",
+    "rules": {
+      "keepHandles": [],
+      "dropHandles": [],
+      "keepKeywords": ["ai", "openai", "coding", "developer", "tech", "创业", "编程", "科技"],
+      "dropKeywords": ["airdrop", "giveaway", "casino", "bet", "博彩", "空投", "抽奖", "接推广", "商务合作"],
+      "lowInfoCandidate": true
+    },
+    "execution": {
+      "minDelayMs": 6000,
+      "maxDelayMs": 14000,
+      "maxUnfollowPerSession": 50,
+      "requireConfirmFile": true,
+      "maxConsecutiveFailures": 3,
+      "cooldownEveryActions": 20,
+      "cooldownMs": 300000
+    },
+    "safety": {
+      "requireHeadfulForExecute": true,
+      "stopOnRiskSignals": true,
+      "riskTextPatterns": [
+        "unusual activity",
+        "temporarily restricted",
+        "temporarily limited",
+        "rate limit",
+        "account locked",
+        "account suspended",
+        "verify your account",
+        "账号已锁定",
+        "账号已暂停",
+        "异常活动",
+        "请验证",
+        "访问受限"
+      ]
+    }
+  },
   "selectors": {
     "tweetMoreButton": "[aria-label*='更多'][role='button'], [data-testid='caret']",
     "deleteButton": "[role='menuitem'][data-testid*='delete'], [role='menuitem']:has-text('删除')",
@@ -47,9 +89,6 @@
     "following": "https://twitter.com/{username}/following"
   }
 }
-
-
-
 
 
 

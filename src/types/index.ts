@@ -6,6 +6,9 @@ export interface Config {
   retryConfig: RetryConfig;
   selectors: Selectors;
   urls: URLs;
+  followingPlan?: FollowingPlanConfig;
+  followingManagement?: FollowingManagementConfig;
+  cleanupRules?: CleanupRulesConfig;
 }
 
 export interface DeleteOptions {
@@ -31,6 +34,52 @@ export interface RetryConfig {
   maxRetries: number;
   retryDelay: number;
   exponentialBackoff: boolean;
+}
+
+export type FollowingMode = 'export' | 'classify' | 'dry-run' | 'execute';
+
+export interface CleanupRulesConfig {
+  following?: FollowingRulesConfig;
+}
+
+export interface FollowingPlanConfig {
+  mode: FollowingMode;
+  input?: string;
+  confirmFile?: string;
+  runId?: string;
+}
+
+export interface FollowingRulesConfig {
+  keepHandles: string[];
+  dropHandles: string[];
+  keepKeywords: string[];
+  dropKeywords: string[];
+  lowInfoCandidate?: boolean;
+}
+
+export interface FollowingExecutionConfig {
+  minDelayMs: number;
+  maxDelayMs: number;
+  maxUnfollowPerSession: number;
+  requireConfirmFile: boolean;
+  maxConsecutiveFailures: number;
+  cooldownEveryActions: number;
+  cooldownMs: number;
+}
+
+export interface FollowingSafetyConfig {
+  requireHeadfulForExecute: boolean;
+  stopOnRiskSignals: boolean;
+  riskTextPatterns: string[];
+}
+
+export interface FollowingManagementConfig {
+  enabled: boolean;
+  outputDir: string;
+  defaultMode: FollowingMode;
+  rules: FollowingRulesConfig;
+  execution: FollowingExecutionConfig;
+  safety: FollowingSafetyConfig;
 }
 
 export interface SelectorConfig {
@@ -127,4 +176,47 @@ export interface DeleteStats {
   bookmarks: number;
   following: number;
   errors: number;
+}
+
+export interface FollowingAccount {
+  handle: string;
+  displayName: string | null;
+  bio: string | null;
+  isVerified: boolean;
+  followsYou: boolean;
+  avatarUrl: string | null;
+  profileUrl: string | null;
+  collectedAt: string;
+  sourceUrl?: string;
+}
+
+export type FollowingDecision = 'candidate' | 'keep';
+
+export interface ClassifiedFollowing extends FollowingAccount {
+  decision: FollowingDecision;
+  reasons: string[];
+}
+
+export interface FollowingSessionItem {
+  handle: string;
+  displayName: string | null;
+  status: 'pending' | 'success' | 'failed' | 'skipped';
+  reason?: string;
+  processedAt?: string;
+}
+
+export interface FollowingExecutionSession {
+  runId: string;
+  mode: 'execute';
+  inputFile: string;
+  startedAt: string;
+  updatedAt: string;
+  status: 'running' | 'completed' | 'cancelled' | 'failed';
+  stopReason?: string;
+  processed: number;
+  success: number;
+  failed: number;
+  skipped: number;
+  maxUnfollowPerSession: number;
+  items: FollowingSessionItem[];
 }
