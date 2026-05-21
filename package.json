@@ -3,6 +3,33 @@
   "version": "1.0.0",
   "description": "Local-first X / Twitter account cleanup tool built with Playwright: bulk delete tweets and replies, undo retweets, unlike tweets, remove bookmarks, and review/unfollow accounts safely.",
   "main": "dist/index.js",
+  "bin": {
+    "x-account-cleaner": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "docs/",
+    "examples/",
+    "scripts/",
+    "config.json",
+    "selectors.json",
+    "env.example",
+    "install.sh",
+    "install.bat",
+    "start.sh",
+    "start.bat",
+    "QUICKSTART.md",
+    "START_HERE.md",
+    "llms.txt",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "选择器配置说明.md",
+    "选择器快速参考.txt",
+    "登录说明.md",
+    "启动指南.md"
+  ],
   "homepage": "https://github.com/tytsxai/x-account-cleaner#readme",
   "repository": {
     "type": "git",
@@ -24,7 +51,9 @@
     "clean": "rimraf dist",
     "test:selectors": "node scripts/test-selectors.js",
     "test:following": "node scripts/test-following-management.js",
-    "verify": "npm run build && npm run lint && npm run format:check && npm run test:selectors && npm run test:following"
+    "test:cli": "node scripts/test-cli.js",
+    "prepack": "npm run build",
+    "verify": "npm run build && npm run lint && npm run format:check && npm run test:cli && npm run test:selectors && npm run test:following"
   },
   "keywords": [
     "twitter",

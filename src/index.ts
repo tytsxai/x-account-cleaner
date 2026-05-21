@@ -95,11 +95,20 @@ function formatError(error: unknown): string {
 }
 
 function getAppVersion(): string | null {
+  const candidatePaths = [
+    path.join(__dirname, '..', 'package.json'),
+    path.join(process.cwd(), 'package.json'),
+  ];
+
   try {
-    const pkgPath = path.join(process.cwd(), 'package.json');
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-    if (typeof pkg.version === 'string') {
-      return pkg.version;
+    for (const pkgPath of candidatePaths) {
+      if (!fs.existsSync(pkgPath)) {
+        continue;
+      }
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (typeof pkg.version === 'string') {
+        return pkg.version;
+      }
     }
   } catch (error) {
     log.debug('读取版本信息失败', error);
@@ -183,6 +192,26 @@ function parseArgs(argv: string[]): ParsedArgs {
 function getStringOption(args: ParsedArgs, name: string): string | null {
   const value = args.options.get(name);
   return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
+function hasBooleanOption(args: ParsedArgs, ...names: string[]): boolean {
+  return names.some((name) => args.options.get(name) === true);
+}
+
+function isHelpRequested(args: ParsedArgs): boolean {
+  return (
+    args.command === 'help' ||
+    args.command === '-h' ||
+    args.subcommand === 'help' ||
+    args.subcommand === '-h' ||
+    hasBooleanOption(args, 'help', 'h')
+  );
+}
+
+function isVersionRequested(args: ParsedArgs): boolean {
+  return (
+    args.command === 'version' || args.command === '-v' || hasBooleanOption(args, 'version', 'v')
+  );
 }
 
 function assertFollowingCommand(value: string | null): FollowingCommand {
@@ -614,9 +643,52 @@ function printWelcome() {
   const versionLabel = appVersion ? `v${appVersion}` : 'v1.0.0';
   console.log('');
   console.log(chalk.cyan('========================================'));
-  console.log(chalk.cyan(`     Twitter 自动清理工具 ${versionLabel}`));
+  console.log(chalk.cyan(`     X Account Cleaner ${versionLabel}`));
   console.log(chalk.cyan('========================================'));
   console.log('');
+}
+
+function printUsage(): void {
+  const versionLabel = appVersion ? `v${appVersion}` : 'v1.0.0';
+  console.log(`X Account Cleaner ${versionLabel}`);
+  console.log('');
+  console.log('Usage:');
+  console.log('  x-account-cleaner [--help] [--version]');
+  console.log('  x-account-cleaner followings <command> [options]');
+  console.log('  npm run start -- [--help]');
+  console.log('  npm run start -- followings <command> [options]');
+  console.log('');
+  console.log('Default cleanup flow:');
+  console.log('  1. Edit config.json and keep maxDeletePerSession small for the first run.');
+  console.log('  2. Run npm run build && npm run start:prod.');
+  console.log('  3. Keep HEADLESS=false when confirming browser behavior.');
+  console.log('');
+  console.log('Following cleanup commands:');
+  console.log('  followings export');
+  console.log('  followings classify --input data/followings/<runId>/followings.jsonl');
+  console.log('  followings dry-run --input data/followings/<runId>/approved-unfollow.jsonl');
+  console.log(
+    '  followings execute --confirm-file data/followings/<runId>/approved-unfollow.jsonl'
+  );
+  console.log('  followings resume --run-id <runId>');
+  console.log('');
+  console.log('Docs: README.md, QUICKSTART.md, docs/README.md');
+}
+
+function printFollowingsUsage(): void {
+  console.log('X Account Cleaner following workflow');
+  console.log('');
+  console.log('Usage:');
+  console.log('  x-account-cleaner followings export [--run-id <runId>]');
+  console.log('  x-account-cleaner followings classify --input <followings.jsonl>');
+  console.log('  x-account-cleaner followings dry-run --input <approved-unfollow.jsonl>');
+  console.log('  x-account-cleaner followings execute --confirm-file <approved-unfollow.jsonl>');
+  console.log('  x-account-cleaner followings resume --run-id <runId>');
+  console.log('');
+  console.log('Safety model: export and classify are review steps; execute only uses an explicit');
+  console.log(
+    'approved-unfollow.jsonl confirmation file and is blocked in headless mode by default.'
+  );
 }
 
 /**
@@ -640,22 +712,37 @@ process.on('SIGTERM', () => {
 
 // 启动程序
 const parsedArgs = parseArgs(process.argv.slice(2));
-const entrypoint = parsedArgs.command === 'followings' ? runFollowingsCommand(parsedArgs) : main();
+if (isVersionRequested(parsedArgs)) {
+  console.log(appVersion || '0.0.0');
+} else if (isHelpRequested(parsedArgs)) {
+  if (parsedArgs.command === 'followings') {
+    printFollowingsUsage();
+  } else {
+    printUsage();
+  }
+} else if (parsedArgs.command && parsedArgs.command !== 'followings') {
+  console.error(`Unknown command: ${parsedArgs.command}`);
+  console.error('Run `x-account-cleaner --help` for available commands.');
+  process.exitCode = 1;
+} else {
+  const entrypoint =
+    parsedArgs.command === 'followings' ? runFollowingsCommand(parsedArgs) : main();
 
-void entrypoint
-  .then(async () => {
-    if (parsedArgs.command === 'followings') {
-      if (runContext.status === 'running') {
-        runContext.status = 'completed';
+  void entrypoint
+    .then(async () => {
+      if (parsedArgs.command === 'followings') {
+        if (runContext.status === 'running') {
+          runContext.status = 'completed';
+        }
+        await writeRunSummary(0);
+        await closeBrowser();
+        releaseRunLock();
       }
-      await writeRunSummary(0);
-      await closeBrowser();
-      releaseRunLock();
-    }
-  })
-  .catch((error) => {
-    if (isCancellationError(error)) {
-      return;
-    }
-    void shutdown(1, '启动失败:', error);
-  });
+    })
+    .catch((error) => {
+      if (isCancellationError(error)) {
+        return;
+      }
+      void shutdown(1, '启动失败:', error);
+    });
+}

@@ -11,6 +11,9 @@ node --version
 # 安装依赖
 npm install
 npx playwright install chromium
+
+# 查看命令帮助，不会打开浏览器或执行清理
+npm run start -- --help
 ```
 
 ## 第二步：创建配置文件
@@ -86,6 +89,7 @@ npm run start:prod
 - 观察浏览器操作是否正常
 - 确认无误后再增加删除数量
 - 如果只想管理关注列表，阅读 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)
+- 遇到命令不确定时先运行 `npm run start -- --help`
 
 ## 常见问题
 
@@ -107,11 +111,11 @@ npm run start:prod
 - 📚 查看 [docs/README.md](docs/README.md) 选择后续文档
 - 🔧 查看 [故障排查指南](docs/TROUBLESHOOTING.md)
 - 🚀 探索 [高级用法](docs/ADVANCED.md)
+- ✅ 准备贡献或发版时运行 `npm run verify` 和 `npm pack --dry-run`
 
 ---
 
 **警告**：删除的内容无法恢复，请谨慎操作！
-
 
 
 
