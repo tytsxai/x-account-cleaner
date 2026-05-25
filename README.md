@@ -237,6 +237,7 @@ npm run test:selectors
 - [docs/OPEN_SOURCE_READINESS.md](docs/OPEN_SOURCE_READINESS.md): 公开仓库展示、CI、Issue/PR、安全和发版检查清单。
 - [llms.txt](llms.txt): 面向 AI 搜索、代码助手和摘要系统的项目说明。
 - [SECURITY.md](SECURITY.md): 安全报告和本地账号数据保护说明。
+- [DISCLAIMER.md](DISCLAIMER.md): 使用风险、服务条款和授权边界说明。
 
 ## 开发与验证
 
@@ -315,6 +316,8 @@ x-account-cleaner/
 本工具仅用于清理你自己有权操作的 X / Twitter 账号内容。使用本工具造成的内容丢失、账号限制、账号封禁或其他后果由使用者自行承担。请遵守 X / Twitter 服务条款和适用法律法规。
 
 This project is provided for personal account cleanup and educational automation use. You are responsible for how you use it and for any account or data consequences.
+
+See [DISCLAIMER.md](DISCLAIMER.md) for the standalone disclaimer. Keeping the disclaimer outside `LICENSE` helps GitHub detect the MIT license reliably.
 
 ## License
 
