@@ -209,6 +209,7 @@ export interface FollowingExecutionSession {
   runId: string;
   mode: 'execute';
   inputFile: string;
+  username?: string;
   startedAt: string;
   updatedAt: string;
   status: 'running' | 'completed' | 'cancelled' | 'failed';

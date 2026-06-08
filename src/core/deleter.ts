@@ -1,11 +1,23 @@
 import { Page } from 'playwright';
 import type { ElementHandle } from 'playwright';
 import { log } from '../utils/logger';
-import { sleep, randomSleep, withRetry } from '../utils/retry';
+import { sleep, randomSleep, withRetry, RetryOptions } from '../utils/retry';
 import { SelectorHelper, TweetInfo, UserInfo } from '../utils/selector';
 import { getEnvConfig } from '../config/config';
-import { throwIfCancellationRequested } from '../utils/cancellation';
+import { isCancellationError, throwIfCancellationRequested } from '../utils/cancellation';
+import { NonRetryableError, RateLimitError, RetryableError } from '../utils/errors';
 import { Config, ContentType, DeleteStats } from '../types';
+
+type BlockingStateType = 'rate_limit' | 'transient_error' | 'account_restricted';
+type BlockingStateSeverity = 'retryable' | 'non_retryable';
+
+interface BlockingState {
+  type: BlockingStateType;
+  label: string;
+  severity: BlockingStateSeverity;
+  message: string;
+  retryAfterMs?: number;
+}
 
 /**
  * Twitter 内容删除器
@@ -45,6 +57,28 @@ export class TwitterDeleter {
       return;
     }
     await randomSleep(minDelay, maxDelay);
+  }
+
+  private getRateLimitBackoffMs(): number {
+    const { delayBetweenActions, delayBetweenBatches } = this.config.executionConfig;
+    const retryDelay = this.config.retryConfig.retryDelay;
+    return Math.max(
+      60_000,
+      retryDelay,
+      delayBetweenBatches,
+      delayBetweenActions + this.getDelayJitterMs()
+    );
+  }
+
+  private getActionRetryOptions(): RetryOptions {
+    const retryDelay = Math.max(0, this.config.retryConfig.retryDelay);
+    return {
+      ...this.config.retryConfig,
+      retryDelay,
+      maxDelayMs: Math.max(this.getRateLimitBackoffMs(), retryDelay * 4),
+      jitterRatio: 0.2,
+      retryOn: (error) => error instanceof RetryableError,
+    };
   }
 
   private shouldRefresh(batchCount: number): boolean {
@@ -166,7 +200,7 @@ export class TwitterDeleter {
   private async getSessionBlocker(context: string): Promise<string | null> {
     const url = this.getCurrentUrl();
     const pathname = this.getPathname(url);
-    const blockedPrefixes = ['/i/flow', '/login', '/account/access'];
+    const blockedPrefixes = ['/i/flow', '/login'];
 
     if (blockedPrefixes.some((blocked) => pathname.startsWith(blocked))) {
       return `检测到登录失效或需要验证 (${context})`;
@@ -220,7 +254,7 @@ export class TwitterDeleter {
       await this.waitForSessionRecovery(context, blocker);
     }
 
-    await this.detectBlockingState(context);
+    await this.ensureNoBlockingState(context);
   }
 
   private buildTweetTargetKey(info: TweetInfo, index: number): string {
@@ -279,35 +313,155 @@ export class TwitterDeleter {
     return null;
   }
 
-  private async detectBlockingState(context: string): Promise<void> {
-    let alertText = '';
+  private buildBlockingError(context: string, state: BlockingState): Error {
+    const message = `检测到阻断状态 (${state.label})：${state.message} (${context})`;
 
-    try {
-      const alertLocator = this.page.locator('[role="alert"], [data-testid="toast"]');
-      const contents = await alertLocator.allTextContents();
-      alertText = contents.join(' ').trim();
-    } catch {
-      alertText = '';
+    if (state.type === 'rate_limit') {
+      return new RateLimitError(message, state.retryAfterMs);
     }
 
-    if (!alertText) {
+    if (state.severity === 'retryable') {
+      return new RetryableError(message);
+    }
+
+    return new NonRetryableError(message);
+  }
+
+  private getBlockingPatterns(): Array<{
+    type: BlockingStateType;
+    label: string;
+    severity: BlockingStateSeverity;
+    pattern: RegExp;
+    retryAfterMs?: number;
+  }> {
+    return [
+      {
+        type: 'rate_limit',
+        label: '触发频率限制',
+        severity: 'retryable',
+        pattern:
+          /rate limit|too many requests|requests limit|请求过多|频率限制|操作过于频繁|请稍后再试|try again later/i,
+        retryAfterMs: this.getRateLimitBackoffMs(),
+      },
+      {
+        type: 'account_restricted',
+        label: '账号访问受限',
+        severity: 'non_retryable',
+        pattern:
+          /account locked|account suspended|temporarily restricted|temporarily limited|unusual activity|账号已锁定|账号已暂停|访问受限|异常活动|请验证/i,
+      },
+      {
+        type: 'transient_error',
+        label: '页面临时异常',
+        severity: 'retryable',
+        pattern: /something went wrong|出了点问题|出错了|发生错误/i,
+      },
+    ];
+  }
+
+  private async getBlockingTextSnapshot(): Promise<string> {
+    const selectors = [
+      '[role="alert"]',
+      '[data-testid="toast"]',
+      '[data-testid="error-detail"]',
+      '[data-testid="emptyState"]',
+      '[aria-live="assertive"]',
+    ].join(', ');
+
+    try {
+      const visibleText = await this.page.locator(selectors).allTextContents();
+      const bodyText = await this.page
+        .locator('body')
+        .innerText({ timeout: 1000 })
+        .catch(() => '');
+      return [...visibleText, bodyText].join(' ').replace(/\s+/g, ' ').trim().slice(0, 4000);
+    } catch {
+      return '';
+    }
+  }
+
+  private async getBlockingState(): Promise<BlockingState | null> {
+    const url = this.getCurrentUrl();
+    const pathname = this.getPathname(url);
+
+    if (pathname.startsWith('/account/access')) {
+      return {
+        type: 'account_restricted',
+        label: '账号访问受限',
+        severity: 'non_retryable',
+        message: `当前页面为 ${pathname}`,
+      };
+    }
+
+    const text = await this.getBlockingTextSnapshot();
+    if (!text) {
+      return null;
+    }
+
+    for (const item of this.getBlockingPatterns()) {
+      if (item.pattern.test(text)) {
+        return {
+          type: item.type,
+          label: item.label,
+          severity: item.severity,
+          message: text.slice(0, 240),
+          retryAfterMs: item.retryAfterMs,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  private async detectBlockingState(context: string): Promise<void> {
+    const state = await this.getBlockingState();
+    if (!state) {
       return;
     }
 
-    const patterns: Array<{ label: string; pattern: RegExp }> = [
-      {
-        label: '触发频率限制',
-        pattern: /rate limit|too many requests|请求过多|频率限制|请稍后再试/i,
-      },
-      { label: '页面异常', pattern: /something went wrong|出了点问题|出错了|发生错误/i },
-      { label: '账号受限', pattern: /account locked|账号已锁定|账号已暂停|suspended/i },
-    ];
+    throw this.buildBlockingError(context, state);
+  }
 
-    for (const item of patterns) {
-      if (item.pattern.test(alertText)) {
-        throw new Error(`检测到阻断提示 (${item.label})，请稍后重试 (${context})`);
-      }
-    }
+  private async ensureNoBlockingState(context: string): Promise<void> {
+    await withRetry(
+      async () => {
+        await this.detectBlockingState(context);
+      },
+      this.getActionRetryOptions(),
+      `阻断状态检查 ${context}`
+    );
+  }
+
+  private async runDeletionAction(
+    actionName: string,
+    action: () => Promise<boolean>
+  ): Promise<boolean> {
+    return await withRetry(
+      async () => {
+        throwIfCancellationRequested();
+        await this.detectBlockingState(`${actionName} 前置检查`);
+
+        const success = await action();
+
+        await this.detectBlockingState(`${actionName} 后置检查`);
+
+        if (!success) {
+          throw new RetryableError(`${actionName} 未完成，准备重试`);
+        }
+
+        return true;
+      },
+      this.getActionRetryOptions(),
+      actionName
+    );
+  }
+
+  private shouldAbortDeletion(error: unknown): boolean {
+    return (
+      error instanceof NonRetryableError ||
+      error instanceof RateLimitError ||
+      (error instanceof RetryableError && error.message.includes('检测到阻断状态'))
+    );
   }
 
   /**
@@ -343,7 +497,6 @@ export class TwitterDeleter {
 
         // 尝试滚动加载更多
         await this.selectorHelper.scrollToBottom();
-        await sleep(2000);
         continue;
       }
 
@@ -382,7 +535,6 @@ export class TwitterDeleter {
     try {
       // 滚动到顶部
       await this.selectorHelper.scrollToTop();
-      await sleep(1000);
 
       const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
       if (!firstCandidate) {
@@ -415,6 +567,9 @@ export class TwitterDeleter {
             this.stats.errors++;
           }
         } catch (error) {
+          if (this.shouldAbortDeletion(error)) {
+            throw error;
+          }
           this.stats.errors++;
           log.warn(`删除 ${type} 失败，已跳过`, error);
         }
@@ -422,6 +577,9 @@ export class TwitterDeleter {
 
       await sleep(executionConfig.delayBetweenBatches);
     } catch (error) {
+      if (this.shouldAbortDeletion(error) || isCancellationError(error)) {
+        throw error;
+      }
       log.error('删除批次出错', error);
       this.stats.errors++;
     }
@@ -436,33 +594,29 @@ export class TwitterDeleter {
     tweetElement: ElementHandle<Element>,
     type: ContentType
   ): Promise<boolean> {
-    return await withRetry(
-      async () => {
-        // 点击"更多"按钮
-        const moreClicked = await this.selectorHelper.clickTweetMore(tweetElement);
-        if (!moreClicked) {
-          throw new Error('无法点击更多按钮');
-        }
+    return await this.runDeletionAction(`删除 ${type}`, async () => {
+      // 点击"更多"按钮
+      const moreClicked = await this.selectorHelper.clickTweetMore(tweetElement);
+      if (!moreClicked) {
+        return false;
+      }
 
-        // 点击删除
-        const deleteClicked = await this.selectorHelper.clickDelete();
-        if (!deleteClicked) {
-          // 可能不是自己的推文，或者是转推
-          throw new Error('未找到删除按钮');
-        }
+      // 点击删除
+      const deleteClicked = await this.selectorHelper.clickDelete();
+      if (!deleteClicked) {
+        // 可能不是自己的推文，或者是转推
+        return false;
+      }
 
-        // 确认删除
-        const confirmed = await this.selectorHelper.confirmDelete();
-        if (!confirmed) {
-          throw new Error('无法确认删除');
-        }
+      // 确认删除
+      const confirmed = await this.selectorHelper.confirmDelete();
+      if (!confirmed) {
+        return false;
+      }
 
-        log.debug(`成功删除一条 ${type}`);
-        return true;
-      },
-      this.config.retryConfig,
-      `删除 ${type}`
-    );
+      log.debug(`成功删除一条 ${type}`);
+      return true;
+    });
   }
 
   /**
@@ -482,7 +636,6 @@ export class TwitterDeleter {
       throwIfCancellationRequested();
       await this.ensureSessionActive('取消转推 批次检查');
       await this.selectorHelper.scrollToTop();
-      await sleep(1000);
 
       const attemptedTargets = new Set<string>();
       const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
@@ -508,7 +661,9 @@ export class TwitterDeleter {
           attemptedTargets.add(candidate.key);
           this.logDeletionTarget(ContentType.RETWEETS, candidate.info);
 
-          const success = await this.selectorHelper.unretweet(candidate.element);
+          const success = await this.runDeletionAction('取消转推', () =>
+            this.selectorHelper.unretweet(candidate.element)
+          );
           if (success) {
             unretweetedInBatch++;
             await this.sleepBetweenActions();
@@ -517,6 +672,9 @@ export class TwitterDeleter {
             log.debug('取消转推失败，已跳过');
           }
         } catch (error) {
+          if (this.shouldAbortDeletion(error)) {
+            throw error;
+          }
           this.stats.errors++;
           log.warn('取消转推失败，已跳过', error);
         }
@@ -561,7 +719,6 @@ export class TwitterDeleter {
       throwIfCancellationRequested();
       await this.ensureSessionActive('取消点赞 批次检查');
       await this.selectorHelper.scrollToTop();
-      await sleep(1000);
 
       const attemptedTargets = new Set<string>();
       const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
@@ -573,7 +730,6 @@ export class TwitterDeleter {
           break;
         }
         await this.selectorHelper.scrollToBottom();
-        await sleep(2000);
         continue;
       }
 
@@ -592,7 +748,9 @@ export class TwitterDeleter {
           attemptedTargets.add(candidate.key);
           this.logDeletionTarget(ContentType.LIKES, candidate.info);
 
-          const success = await this.selectorHelper.unlike(candidate.element);
+          const success = await this.runDeletionAction('取消点赞', () =>
+            this.selectorHelper.unlike(candidate.element)
+          );
           if (success) {
             unlikedInBatch++;
             log.debug(`成功取消一个点赞`);
@@ -602,6 +760,9 @@ export class TwitterDeleter {
             log.debug('取消点赞失败，已跳过');
           }
         } catch (error) {
+          if (this.shouldAbortDeletion(error)) {
+            throw error;
+          }
           this.stats.errors++;
           log.warn('取消点赞失败，已跳过', error);
         }
@@ -654,7 +815,6 @@ export class TwitterDeleter {
       throwIfCancellationRequested();
       await this.ensureSessionActive('删除书签 批次检查');
       await this.selectorHelper.scrollToTop();
-      await sleep(1000);
 
       const attemptedTargets = new Set<string>();
       const firstCandidate = await this.getNextTweetCandidate(attemptedTargets);
@@ -666,7 +826,6 @@ export class TwitterDeleter {
           break;
         }
         await this.selectorHelper.scrollToBottom();
-        await sleep(2000);
         continue;
       }
 
@@ -685,7 +844,9 @@ export class TwitterDeleter {
           attemptedTargets.add(candidate.key);
           this.logDeletionTarget(ContentType.BOOKMARKS, candidate.info);
 
-          const success = await this.selectorHelper.removeBookmark(candidate.element);
+          const success = await this.runDeletionAction('删除书签', () =>
+            this.selectorHelper.removeBookmark(candidate.element)
+          );
           if (success) {
             removedInBatch++;
             log.debug(`成功删除一个书签`);
@@ -695,6 +856,9 @@ export class TwitterDeleter {
             log.debug('删除书签失败，已跳过');
           }
         } catch (error) {
+          if (this.shouldAbortDeletion(error)) {
+            throw error;
+          }
           this.stats.errors++;
           log.warn('删除书签失败，已跳过', error);
         }
@@ -747,7 +911,6 @@ export class TwitterDeleter {
       throwIfCancellationRequested();
       await this.ensureSessionActive('取消关注 批次检查');
       await this.selectorHelper.scrollToTop();
-      await sleep(1000);
 
       const attemptedTargets = new Set<string>();
       const firstCandidate = await this.getNextUserCandidate(attemptedTargets);
@@ -759,7 +922,6 @@ export class TwitterDeleter {
           break;
         }
         await this.selectorHelper.scrollToBottom();
-        await sleep(2000);
         continue;
       }
 
@@ -778,7 +940,9 @@ export class TwitterDeleter {
           attemptedTargets.add(candidate.key);
           this.logDeletionTarget(ContentType.FOLLOWING, candidate.info);
 
-          const success = await this.selectorHelper.unfollowUser(candidate.element);
+          const success = await this.runDeletionAction('取消关注', () =>
+            this.selectorHelper.unfollowUser(candidate.element)
+          );
           if (success) {
             unfollowedInBatch++;
             log.debug(`成功取消关注一个用户`);
@@ -788,6 +952,9 @@ export class TwitterDeleter {
             log.debug('取消关注失败，已跳过');
           }
         } catch (error) {
+          if (this.shouldAbortDeletion(error)) {
+            throw error;
+          }
           this.stats.errors++;
           log.warn('取消关注失败，已跳过', error);
         }

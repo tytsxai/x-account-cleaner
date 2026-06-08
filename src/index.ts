@@ -495,6 +495,11 @@ async function main() {
     const config = loadConfig();
     validateConfig(config);
     log.success('配置加载成功');
+    if (!Object.values(config.deleteOptions).some((enabled) => enabled === true)) {
+      throw new Error(
+        '默认清理流程没有启用任何 deleteOptions。请在 config.json 启用至少一个清理类目，或使用 `x-account-cleaner followings export` 进入关注管理流程。'
+      );
+    }
     if (config.deleteOptions.following && !envConfig.allowLegacyFollowingDelete) {
       throw new Error(
         '为降低账号风险，已默认禁止 deleteOptions.following 旧式直接取关。请使用 `npm run start -- followings export/classify/dry-run/execute`；如确需旧路径，设置 ALLOW_LEGACY_FOLLOWING_DELETE=true。'
@@ -655,12 +660,13 @@ function printUsage(): void {
   console.log('Usage:');
   console.log('  x-account-cleaner [--help] [--version]');
   console.log('  x-account-cleaner followings <command> [options]');
+  console.log('  npx x-account-cleaner [--help] [--version]');
   console.log('  npm run start -- [--help]');
   console.log('  npm run start -- followings <command> [options]');
   console.log('');
   console.log('Default cleanup flow:');
-  console.log('  1. Edit config.json and keep maxDeletePerSession small for the first run.');
-  console.log('  2. Run npm run build && npm run start:prod.');
+  console.log('  1. Run from a working directory that contains config.json and selectors.json.');
+  console.log('  2. Keep maxDeletePerSession at 5 for the first headful smoke run.');
   console.log('  3. Keep HEADLESS=false when confirming browser behavior.');
   console.log('');
   console.log('Following cleanup commands:');
@@ -689,6 +695,7 @@ function printFollowingsUsage(): void {
   console.log(
     'approved-unfollow.jsonl confirmation file and is blocked in headless mode by default.'
   );
+  console.log('Legacy deleteOptions.following direct unfollow is blocked by default.');
 }
 
 /**

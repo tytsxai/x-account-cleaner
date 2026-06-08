@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 
 const cliPath = path.join(__dirname, '..', 'dist', 'index.js');
+const packageVersion = require('../package.json').version;
 
 function run(args) {
   return spawnSync(process.execPath, [cliPath, ...args], {
@@ -25,10 +26,10 @@ function assertSuccess(args, expectedText) {
 
 assertSuccess(['--help'], 'X Account Cleaner v');
 assertSuccess(['followings', '--help'], 'X Account Cleaner following workflow');
-assertSuccess(['--version'], '1.0.0');
+assertSuccess(['--version'], packageVersion);
 
 process.env.CLI_TEST_CWD = require('os').tmpdir();
-assertSuccess(['--version'], '1.0.0');
+assertSuccess(['--version'], packageVersion);
 delete process.env.CLI_TEST_CWD;
 
 const unknown = run(['unknown-command']);

@@ -1,5 +1,6 @@
 import { log } from './logger';
 import { isCancellationError, throwIfCancellationRequested } from './cancellation';
+import { RateLimitError } from './errors';
 
 export interface RetryOptions {
   /**
@@ -81,8 +82,13 @@ export async function withRetry<T>(
         throw error;
       }
 
-      // 计算延迟
-      let delayMs = exponentialBackoff ? retryDelay * Math.pow(2, attempt - 1) : retryDelay;
+      // 计算延迟。频率限制类错误可以携带平台建议的 retryAfterMs。
+      const usesErrorDelay = error instanceof RateLimitError && error.retryAfterMs !== undefined;
+      let delayMs = usesErrorDelay
+        ? error.retryAfterMs
+        : exponentialBackoff
+          ? retryDelay * Math.pow(2, attempt - 1)
+          : retryDelay;
 
       // 应用延迟上限
       if (maxDelayMs !== undefined && Number.isFinite(maxDelayMs)) {
@@ -90,7 +96,12 @@ export async function withRetry<T>(
       }
 
       // 应用抖动
-      if (jitterRatio !== undefined && Number.isFinite(jitterRatio) && jitterRatio > 0) {
+      if (
+        !usesErrorDelay &&
+        jitterRatio !== undefined &&
+        Number.isFinite(jitterRatio) &&
+        jitterRatio > 0
+      ) {
         const ratio = Math.max(0, jitterRatio);
         delayMs = delayMs * (1 + (Math.random() - 0.5) * ratio);
       }

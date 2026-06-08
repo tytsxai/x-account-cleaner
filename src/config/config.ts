@@ -67,7 +67,7 @@ const DEFAULT_FOLLOWING_MANAGEMENT: FollowingManagementConfig = {
   execution: {
     minDelayMs: 6000,
     maxDelayMs: 14000,
-    maxUnfollowPerSession: 50,
+    maxUnfollowPerSession: 10,
     requireConfirmFile: true,
     maxConsecutiveFailures: 3,
     cooldownEveryActions: 20,
@@ -265,7 +265,10 @@ export function loadConfig(): Config {
   const configPath = path.join(process.cwd(), 'config.json');
 
   if (!fs.existsSync(configPath)) {
-    throw new Error('配置文件 config.json 不存在，请先创建配置文件');
+    throw new Error(
+      '配置文件 config.json 不存在，请先在当前工作目录创建配置文件。' +
+        '如果通过 npm 安装，可执行: cp node_modules/x-account-cleaner/config.json . && cp node_modules/x-account-cleaner/selectors.json .'
+    );
   }
 
   const configContent = fs.readFileSync(configPath, 'utf-8');

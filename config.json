@@ -8,8 +8,8 @@
     "following": false
   },
   "executionConfig": {
-    "maxDeletePerSession": 100,
-    "deletePerBatch": 6,
+    "maxDeletePerSession": 5,
+    "deletePerBatch": 3,
     "delayBetweenActions": 1500,
     "delayJitterMs": 500,
     "delayBetweenBatches": 2500,
@@ -38,7 +38,7 @@
     "execution": {
       "minDelayMs": 6000,
       "maxDelayMs": 14000,
-      "maxUnfollowPerSession": 50,
+      "maxUnfollowPerSession": 10,
       "requireConfirmFile": true,
       "maxConsecutiveFailures": 3,
       "cooldownEveryActions": 20,
@@ -89,6 +89,5 @@
     "following": "https://twitter.com/{username}/following"
   }
 }
-
 
 

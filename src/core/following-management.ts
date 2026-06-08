@@ -15,6 +15,7 @@ import { getEnvConfig } from '../config/config';
 import { isCancellationError, throwIfCancellationRequested } from '../utils/cancellation';
 import { log } from '../utils/logger';
 import { randomSleep, sleep } from '../utils/retry';
+import { detectRiskSignal as detectPageRiskSignal } from '../utils/risk';
 import { SelectorHelper } from '../utils/selector';
 
 type FollowingExportResult = {
@@ -157,6 +158,19 @@ function writeJsonAtomic(filePath: string, data: unknown): void {
   const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
   fs.renameSync(tempPath, filePath);
+}
+
+function writeFileIfAbsent(filePath: string, content: string): boolean {
+  try {
+    fs.writeFileSync(filePath, content, { encoding: 'utf-8', flag: 'wx' });
+    return true;
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'EEXIST') {
+      return false;
+    }
+    throw error;
+  }
 }
 
 function readJsonl<T>(filePath: string): T[] {
@@ -351,7 +365,7 @@ export class FollowingClassifier {
 
     writeJsonl(candidatesPath, candidates);
     writeJsonl(keepListPath, keep);
-    writeJsonl(approvedTemplatePath, []);
+    const createdApprovalTemplate = writeFileIfAbsent(approvedTemplatePath, '');
     writeCsv(
       reviewPath,
       [
@@ -379,8 +393,12 @@ export class FollowingClassifier {
     log.success(`候选取关名单已保存: ${candidatesPath}`);
     log.info(`保留名单已保存: ${keepListPath}`);
     log.info(`人工复核表已保存: ${reviewPath}`);
-    log.warn(`已生成空确认名单: ${approvedTemplatePath}`);
-    log.warn('执行前请人工从 candidates.jsonl 复制确认要取关的账号到 approved-unfollow.jsonl');
+    if (createdApprovalTemplate) {
+      log.warn(`已生成空确认名单: ${approvedTemplatePath}`);
+      log.warn('执行前请人工从 candidates.jsonl 复制确认要取关的账号到 approved-unfollow.jsonl');
+    } else {
+      log.warn(`确认名单已存在，未覆盖: ${approvedTemplatePath}`);
+    }
 
     return {
       outputDir,
@@ -439,6 +457,7 @@ export class FollowingExecutor {
     if (session.items.length === 0) {
       throw new Error('确认名单为空，已拒绝执行取关。请先人工编辑 approved-unfollow.jsonl。');
     }
+    this.assertSessionMatchesCurrentUser(session);
 
     session.status = 'running';
     session.updatedAt = new Date().toISOString();
@@ -455,7 +474,7 @@ export class FollowingExecutor {
 
       for (const item of session.items) {
         throwIfCancellationRequested();
-        if (item.status === 'success' || item.status === 'skipped') {
+        if (item.status === 'success' || item.status === 'skipped' || item.status === 'failed') {
           continue;
         }
         if (unfollowedThisRun >= execution.maxUnfollowPerSession) {
@@ -510,11 +529,9 @@ export class FollowingExecutor {
         }
       }
 
-      session.status = session.items.some(
-        (item) => item.status === 'pending' || item.status === 'failed'
-      )
-        ? 'running'
-        : 'completed';
+      const hasPending = session.items.some((item) => item.status === 'pending');
+      const hasFailed = session.items.some((item) => item.status === 'failed');
+      session.status = hasPending ? 'running' : hasFailed ? 'failed' : 'completed';
       session.updatedAt = new Date().toISOString();
       this.saveSession(sessionPath, session);
 
@@ -533,7 +550,24 @@ export class FollowingExecutor {
   async resume(runId: string): Promise<FollowingExecuteResult> {
     const sessionPath = path.join(resolveRunDir(this.config, runId), 'session.json');
     const session = this.loadSession(sessionPath);
+    this.assertSessionMatchesCurrentUser(session);
     return await this.execute(session.inputFile, runId);
+  }
+
+  private assertSessionMatchesCurrentUser(session: FollowingExecutionSession): void {
+    if (!session.username) {
+      throw new Error(
+        'session.json 缺少 username，已拒绝恢复执行。请重新 export/classify/execute 生成带账号绑定的新 session。'
+      );
+    }
+
+    const sessionUser = normalizeHandle(session.username);
+    const currentUser = normalizeHandle(this.username);
+    if (sessionUser !== currentUser) {
+      throw new Error(
+        `session 账号与当前登录账号不一致，已拒绝执行: session=@${sessionUser}, current=@${currentUser}`
+      );
+    }
   }
 
   private assertExecutionSafety(): void {
@@ -570,22 +604,8 @@ export class FollowingExecutor {
       return null;
     }
 
-    const url = this.page.url();
-    if (/\/i\/flow\/login|\/account\/access|\/account\/suspended/i.test(url)) {
-      return `risk-url:${url}`;
-    }
-
-    try {
-      const bodyText = await this.page.locator('body').innerText({ timeout: 2000 });
-      const lower = bodyText.toLowerCase();
-      const matched = safety.riskTextPatterns.find((pattern) =>
-        lower.includes(pattern.toLowerCase())
-      );
-      return matched ? `risk-text:${matched}` : null;
-    } catch (error) {
-      log.debug('风险信号检测失败，继续执行前置检查', error);
-      return null;
-    }
+    const signal = await detectPageRiskSignal(this.page, '关注取关执行', safety.riskTextPatterns);
+    return signal ? `${signal.label}:${signal.reason}` : null;
   }
 
   private async unfollowByHandle(handle: string): Promise<{ ok: boolean; reason: string }> {
@@ -685,6 +705,7 @@ export class FollowingExecutor {
       runId,
       mode: 'execute',
       inputFile: path.resolve(process.cwd(), inputFile),
+      username: canonicalHandle(this.username),
       startedAt: now,
       updatedAt: now,
       status,
