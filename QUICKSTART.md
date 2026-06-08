@@ -2,7 +2,29 @@
 
 5 分钟快速上手 **X Account Cleaner**，一个本地运行的 X / Twitter 账号清理工具。
 
-## 第一步：安装依赖
+## 第一步：选择运行方式
+
+如果你是从 npm 安装，先创建一个专用工作目录。CLI 会从当前目录读取 `config.json`、`selectors.json` 和可选 `.env`。
+
+```bash
+# 确保 Node.js 版本 >= 18.18.0
+node --version
+
+mkdir x-account-cleaner-workspace
+cd x-account-cleaner-workspace
+npm init -y
+npm install x-account-cleaner
+npx playwright install chromium
+
+cp node_modules/x-account-cleaner/config.json .
+cp node_modules/x-account-cleaner/selectors.json .
+cp node_modules/x-account-cleaner/env.example .env
+
+# 查看命令帮助，不会打开浏览器或执行清理
+npx x-account-cleaner --help
+```
+
+如果你是直接克隆源码仓库：
 
 ```bash
 # 确保 Node.js 版本 >= 18.18.0
@@ -16,7 +38,7 @@ npx playwright install chromium
 npm run start -- --help
 ```
 
-## 第二步：创建配置文件
+## 第二步：创建或检查 .env 文件
 
 ```bash
 # Windows
@@ -28,7 +50,7 @@ cp env.example .env
 
 ## 第三步：编辑 .env 文件
 
-打开 `.env` 文件，填入你的 Twitter 账号信息：
+打开 `.env` 文件，按需填入你的 X / Twitter 账号信息：
 
 ```env
 TWITTER_USERNAME=你的邮箱或用户名
@@ -53,7 +75,8 @@ HEADLESS=false
     "following": false
   },
   "executionConfig": {
-    "maxDeletePerSession": 10
+    "maxDeletePerSession": 5,
+    "deletePerBatch": 3
   }
 }
 ```
@@ -65,9 +88,18 @@ HEADLESS=false
 - `replies: true` 删除回复
 - `likes: false` 不取消点赞
 - `bookmarks: false` 不删除书签
-- `following: false` 不走旧式直接取关，关注清理建议使用 `followings` 子命令
+- `following: false` 不走旧式直接取关，关注清理从 `followings export` 开始
+- `maxDeletePerSession: 5` 表示每个启用类目本次最多处理 5 项，不是所有类目合计 5 项
 
 ## 第五步：运行程序
+
+如果使用 npm 包：
+
+```bash
+npx x-account-cleaner
+```
+
+如果使用源码仓库：
 
 ```bash
 npm run build
@@ -85,11 +117,12 @@ npm run start:prod
 ## 🎉 完成！
 
 首次运行建议：
-- 先设置 `maxDeletePerSession: 5` 测试
+- 保持默认 `maxDeletePerSession: 5` 测试
+- 第一次只启用 1-2 个内容类目，确认页面识别正确后再扩大范围
 - 观察浏览器操作是否正常
 - 确认无误后再增加删除数量
-- 如果只想管理关注列表，阅读 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)
-- 遇到命令不确定时先运行 `npm run start -- --help`
+- 如果只想管理关注列表，先运行 `npx x-account-cleaner followings export` 或 `npm run start -- followings export`，再阅读 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)
+- 遇到命令不确定时先运行 `npx x-account-cleaner --help` 或 `npm run start -- --help`
 
 ## 常见问题
 
@@ -111,13 +144,11 @@ npm run start:prod
 - 📚 查看 [docs/README.md](docs/README.md) 选择后续文档
 - 🔧 查看 [故障排查指南](docs/TROUBLESHOOTING.md)
 - 🚀 探索 [高级用法](docs/ADVANCED.md)
-- ✅ 准备贡献或发版时运行 `npm run verify` 和 `npm pack --dry-run`
+- ✅ 准备贡献或发版时运行 `npm run release:check`
 
 ---
 
 **警告**：删除的内容无法恢复，请谨慎操作！
-
-
 
 
 

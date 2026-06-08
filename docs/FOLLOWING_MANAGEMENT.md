@@ -1,13 +1,14 @@
 # 关注清理与账号管理工作流
 
-本文档说明 `followings` 子命令的安全工作流。推荐顺序是：导出关注列表 → 本地规则筛选 → 人工复核确认名单 → 慢速顺序执行取关。
+本文档说明 `followings` 子命令的安全工作流。新用户入口必须从只读导出开始，推荐顺序是：导出关注列表 → 本地规则筛选 → 人工复核确认名单 → dry-run → 慢速顺序执行取关。
 
 ## 核心原则
 
 - `export` 和 `classify` 都是只读流程，不会点击取关按钮。
-- `classify` 生成的 `approved-unfollow.jsonl` 默认是空文件；必须人工从候选名单复制确认账号后，`execute` 才会执行。
+- `classify` 首次生成的 `approved-unfollow.jsonl` 默认是空文件；如果该文件已存在，会保留人工编辑结果，不会覆盖。
 - `execute` 拒绝直接读取 `candidates.jsonl`、`followings.jsonl`、`keep-list.jsonl`，避免把自动筛选结果绕过人工确认直接执行。
-- 每次执行都会写入 `session.json`，中断后可以用 `resume` 继续。
+- `deleteOptions.following` 是旧式直接取关路径，默认被 `ALLOW_LEGACY_FOLLOWING_DELETE=false` 拦截，不作为入门入口。
+- 每次执行都会写入带当前账号绑定的 `session.json`，中断后可以用 `resume` 继续；若当前登录账号与 session 账号不一致会拒绝执行。
 - X 页面 DOM 会变化，正式执行前先用 `dry-run` 和小批量确认名单验证。
 - 防封号重点是稳定画像和保守节奏，不建议频繁切换 UA、时区、视口、IP 或无头模式硬跑。
 
@@ -93,7 +94,7 @@ npm run start -- followings resume --run-id <runId>
     "execution": {
       "minDelayMs": 6000,
       "maxDelayMs": 14000,
-      "maxUnfollowPerSession": 50,
+      "maxUnfollowPerSession": 10,
       "requireConfirmFile": true,
       "maxConsecutiveFailures": 3,
       "cooldownEveryActions": 20,
@@ -115,11 +116,12 @@ npm run start -- followings resume --run-id <runId>
 - 空确认名单会被拒绝执行；这用于防止刚分类完成后误把空模板当成已确认任务。
 - 默认 `execute` 要求 `HEADLESS=false`，方便人工随时观察验证码、限制页、登录异常。
 - 执行前会按 handle 在页面用户卡片中重新匹配，匹配不到或匹配不一致会跳过并写入失败原因。
-- 达到 `maxUnfollowPerSession` 后停止，保留 `pending` 项供下次 `resume` 继续。
+- 达到 `maxUnfollowPerSession` 后停止，默认上限为 10，保留 `pending` 项供下次 `resume` 继续。
 - 连续失败达到 `maxConsecutiveFailures` 后停止，避免选择器失效时继续点击。
 - 每执行 `cooldownEveryActions` 个成功取关动作后会冷却 `cooldownMs`，默认 20 个动作冷却 5 分钟。
 - 命中 `riskTextPatterns` 或跳到登录/账号访问限制页面时会停止并写入 `session.stopReason`。
-- 失败项会保留在 `session.json` 中，恢复时会再次尝试；不想重试时从确认名单或 session 中移除。
+- 失败项会保留在 `session.json` 中供人工复核，`resume` 默认只继续 `pending` 项，不会反复重试已失败项。
+- 旧版 `session.json` 如果没有 `username` 字段，会被拒绝恢复；请重新走 `export -> classify -> execute` 生成带账号绑定的新 session。
 - `session.json` 使用临时文件加重命名写入，进程中断时尽量避免写出半截 JSON；如果文件仍然损坏，应先根据日志和 `approved-unfollow.jsonl` 备份一份后再人工修复。
 
 ## 设备画像与账号安全
@@ -139,6 +141,6 @@ BROWSER_USER_AGENT=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/5
 
 建议：
 - 同一账号固定 `USER_DATA_DIR`，不要多个工具同时操作同一账号。
-- 同一账号长期保持同一套 UA、视口、时区、语言和登录状态。
+- 同一账号长期保持同一套 UA、视口、时区、语言和 `USER_DATA_DIR/profile/` 持久浏览器 profile。
 - 大规模取关拆成多天执行，优先使用 `maxUnfollowPerSession`、冷却和人工复核。
 - 出现验证码、异常活动、账号访问受限时立即停止，人工处理后隔一段时间再恢复。

@@ -15,6 +15,7 @@
 - 执行文件约束：`requireConfirmFile=true` 时，确认文件名必须包含 `approved` 或 `confirm`。
 - 进度文件可靠性：`session.json` 改为临时文件加重命名写入，降低进程中断导致半截 JSON 的概率。
 - 中断状态记录：关注执行收到取消时会把 session 标记为 `cancelled` 并写入 `stopReason`。
+- 删除批次阻断保护：取消信号、频率限制、账号受限和验证类阻断会终止本次运行，不会被当作普通批次失败继续吞掉。
 - 质量门槛：新增确认文件保护、空名单拒绝、分类空模板的本地测试。
 - 运行环境：Node.js 基线提高到 `>=18.18.0`，与当前 ESLint / TypeScript 工具链保持一致。
 
@@ -29,9 +30,10 @@ npm run verify
 破坏性运行前必须确认：
 
 - `config.json` 只启用了本次要清理的类目。
-- 首次生产运行使用小批量，例如 `maxDeletePerSession: 10`。
+- 默认清理入口必须至少启用一个 `deleteOptions`；只做关注管理时使用 `followings` 子命令。
+- 首次生产运行使用默认小批量：`maxDeletePerSession: 5`，并注意该上限按每个启用类目计算。
 - `LOG_TO_FILE=true`，需要自动化监控时设置 `FAIL_ON_ERRORS=true`。
-- 同一账号固定 `USER_DATA_DIR`，不要多实例或多机器同时操作。
+- 同一账号固定 `USER_DATA_DIR`，不要多实例或多机器同时操作；`USER_DATA_DIR/profile/` 是主浏览器会话，`state.json` 只是快照。
 - 关注取关必须经过 `export -> classify -> 人工编辑 approved-unfollow.jsonl -> dry-run -> execute`。
 
 ## 仍需人工确认

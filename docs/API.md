@@ -47,7 +47,7 @@ await browserManager.close();
 
 ### LoginManager
 
-登录管理类，处理 Twitter 登录逻辑。
+登录管理类，处理 Twitter 登录逻辑。登录成功以已认证页面 DOM 信号为准，而不是仅检查当前 URL。
 
 #### 构造函数
 
@@ -59,7 +59,7 @@ constructor(page: Page)
 
 ##### `isLoggedIn(): Promise<boolean>`
 
-检查是否已登录。
+导航到主页后检查是否已登录。该方法等待已认证页面外壳 DOM（例如个人资料导航、账号菜单、主页导航等），不会只因为 URL 包含 `/home` 就判定成功。
 
 ```typescript
 const loginManager = new LoginManager(page);
@@ -68,7 +68,7 @@ const loggedIn = await loginManager.isLoggedIn();
 
 ##### `login(): Promise<LoginResult>`
 
-执行登录操作（自动或手动）。
+执行登录操作（自动或手动）。自动登录按导航、用户名输入、验证 detour 检测、密码输入、提交和最终 DOM 校验分阶段重试；遇到验证码、二次验证或账号访问限制时，有头模式会切换为手动等待，无头模式会明确失败。
 
 ```typescript
 const result = await loginManager.login();
@@ -303,7 +303,13 @@ const result = await withRetry(
   - `maxRetries`: 最大重试次数
   - `retryDelay`: 重试延迟（毫秒）
   - `exponentialBackoff`: 是否使用指数退避
+  - `maxDelayMs`: 可选，单次退避延迟上限
+  - `jitterRatio`: 可选，退避抖动比例
+  - `maxElapsedMs`: 可选，总耗时上限
+  - `retryOn`: 可选，按错误类型决定是否重试
 - `actionName`: 操作名称（用于日志）
+
+`RateLimitError` 可携带 `retryAfterMs`，`withRetry` 会优先使用该值作为下一次等待时间；`NonRetryableError` 应通过 `retryOn` 排除，直接向上抛出。
 
 #### `sleep(ms: number): Promise<void>`
 
@@ -409,6 +415,8 @@ interface RetryConfig {
 }
 ```
 
+删除执行内部会把频率限制、页面临时异常和账号访问受限映射到 `RetryableError` / `RateLimitError` / `NonRetryableError`。频率限制按退避重试；账号限制、验证、锁定或访问受限会停止删除流程。
+
 ### Selectors
 
 ```typescript
@@ -497,8 +505,6 @@ class HookedDeleter extends TwitterDeleter {
 ---
 
 更多详细信息请查看源代码中的 JSDoc 注释。
-
-
 
 
 

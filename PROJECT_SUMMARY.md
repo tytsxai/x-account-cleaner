@@ -205,9 +205,9 @@ class TwitterDeleter {
     "likes": false               // 是否取消点赞
   },
   "executionConfig": {
-    "maxDeletePerSession": 100,  // 单次最大删除数
-    "deletePerBatch": 5,         // 每批删除数量
-    "delayBetweenActions": 2000, // 操作间延迟（ms）
+    "maxDeletePerSession": 5,    // 每个启用类目单次最大处理数
+    "deletePerBatch": 3,         // 每批删除数量
+    "delayBetweenActions": 1500, // 操作间基础延迟（ms）
     "delayBetweenBatches": 3000, // 批次间延迟（ms）
     "pageRefreshDelay": 5000     // 刷新后等待（ms）
   },
@@ -453,7 +453,6 @@ MIT License - 可自由使用和修改
 ---
 
 **最后提醒**：本工具会永久删除 Twitter 内容，请谨慎使用！
-
 
 
 

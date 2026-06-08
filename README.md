@@ -60,7 +60,7 @@
   - 人工把确认要取关的账号写入 `approved-unfollow.jsonl`
   - `dry-run` 预览后再慢速顺序执行
   - 中断后可通过 `resume` 继续
-- 登录状态持久化到本地 `browser-data/state.json`
+- 登录状态持久化到本地 `browser-data/profile/`，并写出 `browser-data/state.json` 快照
 - 支持 `.env` 浏览器画像、日志级别和安全开关配置
 - 支持 `selectors.json` 独立选择器配置，用于应对 X 前端 DOM 变动
 - 每次运行写入 `logs/run-summary-*.json`，便于排障和审计
@@ -74,6 +74,39 @@
 - Windows、macOS 或 Linux
 - 一个可登录的 X / Twitter 账号
 
+### npm / npx 安装运行
+
+`x-account-cleaner` 会从当前工作目录读取 `config.json`、`selectors.json` 和可选的 `.env`。首次用 npm 包运行时，先创建一个专用工作目录，并从已安装的包里复制默认配置：
+
+```bash
+mkdir x-account-cleaner-workspace
+cd x-account-cleaner-workspace
+npm init -y
+npm install x-account-cleaner
+npx playwright install chromium
+
+# 复制默认配置；如不需要保存账号密码，可以不创建 .env
+cp node_modules/x-account-cleaner/config.json .
+cp node_modules/x-account-cleaner/selectors.json .
+cp node_modules/x-account-cleaner/env.example .env
+
+# 查看帮助，不会打开浏览器或执行清理
+npx x-account-cleaner --help
+npx x-account-cleaner followings --help
+
+# 正式运行前先编辑 config.json，保持小批量有头试跑
+npx x-account-cleaner
+```
+
+也可以全局安装：
+
+```bash
+npm install -g x-account-cleaner
+x-account-cleaner --version
+```
+
+全局安装后仍建议在包含 `config.json` / `selectors.json` 的工作目录里运行。
+
 ### Windows 一键运行
 
 ```bat
@@ -81,7 +114,7 @@ install.bat
 start.bat
 ```
 
-运行前建议先打开 `config.json`，把 `executionConfig.maxDeletePerSession` 调小到 `5` 或 `10` 做试跑。
+默认配置已经按首次运行保守模式设置：每个启用类目单次最多处理 `5` 项。先用这个上限完成有头试跑，确认页面识别正确后再逐步调大。
 
 ### macOS / Linux 一键运行
 
@@ -91,7 +124,7 @@ chmod +x install.sh start.sh
 ./start.sh
 ```
 
-### npm 命令运行
+### 从源码仓库运行
 
 ```bash
 npm install
@@ -113,7 +146,7 @@ npm start
 
 ## 最小配置示例
 
-主要配置文件是 [config.json](config.json)。首次运行建议只开少量目标，确认页面识别正确后再扩大范围。
+主要配置文件是 [config.json](config.json)。首次运行建议只开 1-2 个目标类目，确认页面识别正确后再扩大范围。`maxDeletePerSession` 是“每个启用类目”的单次上限，不是所有类目合计上限。
 
 ```json
 {
@@ -126,8 +159,8 @@ npm start
     "following": false
   },
   "executionConfig": {
-    "maxDeletePerSession": 10,
-    "deletePerBatch": 6,
+    "maxDeletePerSession": 5,
+    "deletePerBatch": 3,
     "delayBetweenActions": 1500,
     "delayJitterMs": 500,
     "delayBetweenBatches": 2500,
@@ -168,7 +201,7 @@ ALLOW_LEGACY_FOLLOWING_DELETE=false
 
 ## 关注清理推荐流程
 
-不建议直接打开 `deleteOptions.following=true`。旧式直接取关路径默认会被 `ALLOW_LEGACY_FOLLOWING_DELETE=false` 拦截。推荐使用下面的确认名单流程：
+不要把 `deleteOptions.following` 当作新手入口。旧式直接取关路径默认会被 `ALLOW_LEGACY_FOLLOWING_DELETE=false` 拦截。关注清理从只读导出开始，推荐使用下面的确认名单流程：
 
 ```bash
 # 1. 只读导出关注列表
@@ -287,7 +320,7 @@ x-account-cleaner/
 
 ### 凭据会上传到服务器吗？
 
-不会。项目设计为本机运行。自动登录凭据来自你的 `.env`，浏览器状态保存在本地 `USER_DATA_DIR`。仍然建议优先使用手动登录，避免明文保存密码。
+不会。项目设计为本机运行。自动登录凭据来自你的 `.env`，浏览器主会话保存在本地 `USER_DATA_DIR/profile/`，并在 `USER_DATA_DIR/state.json` 写出快照。仍然建议优先使用手动登录，避免明文保存密码。
 
 ### 可以只清理点赞或书签吗？
 
@@ -295,7 +328,7 @@ x-account-cleaner/
 
 ### 删除后可以恢复吗？
 
-通常不能。运行前请备份重要内容，并先用 `maxDeletePerSession: 5` 或 `10` 小批量验证。
+通常不能。运行前请备份重要内容，并先用默认的 `maxDeletePerSession: 5` 小批量验证。
 
 ### 为什么有时没有删除任何内容？
 

@@ -28,7 +28,8 @@
     "选择器配置说明.md",
     "选择器快速参考.txt",
     "登录说明.md",
-    "启动指南.md"
+    "启动指南.md",
+    "LICENSE"
   ],
   "homepage": "https://github.com/tytsxai/x-account-cleaner#readme",
   "repository": {
@@ -53,7 +54,8 @@
     "test:following": "node scripts/test-following-management.js",
     "test:cli": "node scripts/test-cli.js",
     "prepack": "npm run build",
-    "verify": "npm run build && npm run lint && npm run format:check && npm run test:cli && npm run test:selectors && npm run test:following"
+    "verify": "npm run build && npm run lint && npm run format:check && npm run test:cli && npm run test:selectors && npm run test:following",
+    "release:check": "npm run verify && npm pack --dry-run"
   },
   "keywords": [
     "twitter",
@@ -81,7 +83,7 @@
     "playwright",
     "typescript"
   ],
-  "author": "",
+  "author": "tytsxai",
   "license": "MIT",
   "dependencies": {
     "playwright": "^1.40.0",
@@ -113,5 +115,8 @@
     "glob": "^10.5.0",
     "js-yaml": "^4.1.1",
     "picomatch": "^2.3.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

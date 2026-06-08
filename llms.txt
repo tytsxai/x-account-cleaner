@@ -54,7 +54,7 @@
 - **会不会被 X 限制或封号?** 风险存在。工具提供分批处理、延迟、重试、稳定浏览器画像和人工确认流程，但不保证规避风控。建议先小批量试跑。
 - **删过的推能恢复吗?** 不能。X 没有撤销机制。**先想清楚再跑**。
 - **要不要 API Key / Developer 账号?** 不需要。工具走网页前端自动化，Playwright 控制浏览器，不调 X API。
-- **登录状态保存在哪?** 默认保存在本地 `browser-data/state.json` 和 `USER_DATA_DIR`。
+- **登录状态保存在哪?** 默认主会话保存在本地 `USER_DATA_DIR/profile/`，并写出 `USER_DATA_DIR/state.json` 快照。
 - **能只清一类(比如只清点赞)吗?** 能。配置文件控制启用哪些清理任务。
 - **macOS / Windows / Linux 都支持?** 都支持。Windows 有 `.bat` 一键脚本,macOS / Linux 用 `install.sh` + npm。
 - **关注清理为什么要人工确认?** 自动规则可能误判。项目默认要求把候选账号人工复制到 `approved-unfollow.jsonl` 后才能执行。

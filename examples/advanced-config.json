@@ -1,5 +1,5 @@
 {
-  "description": "高级配置示例 - 展示各种配置选项的用法",
+  "description": "高级配置示例 - 展示各种配置选项的用法；首次运行请优先使用根目录 config.json 的保守默认值",
   "configs": {
     "激进模式": {
       "description": "快速删除大量内容（风险较高）",
@@ -25,7 +25,7 @@
       }
     },
     "保守模式": {
-      "description": "稳定可靠，适合重要账号",
+      "description": "比激进模式更稳，但仍高于首次运行默认上限，适合已完成小批量验证后的重要账号",
       "config": {
         "deleteOptions": {
           "tweets": true,
@@ -117,7 +117,7 @@
       }
     },
     "平衡模式": {
-      "description": "速度和安全的平衡（推荐）",
+      "description": "速度和安全的平衡，适合已完成首次试跑后的普通账号",
       "config": {
         "deleteOptions": {
           "tweets": true,
@@ -159,7 +159,6 @@
     "5. 激进模式可能触发 Twitter 限制，请谨慎使用"
   ]
 }
-
 
 
 

@@ -76,11 +76,12 @@
     "replies": true,     // 删除回复
     "likes": false,      // 取消点赞
     "bookmarks": false,  // 删除书签
-    "following": false   // 取消关注
+    "following": false   // 保持关闭；关注清理使用 followings 子命令
   },
   "executionConfig": {
-    "maxDeletePerSession": 100,  // 单次最大删除数量
-    "delayBetweenActions": 2000  // 操作间延迟（毫秒）
+    "maxDeletePerSession": 5,    // 每个启用类目单次最多处理 5 项
+    "deletePerBatch": 3,         // 每批最多处理 3 项
+    "delayBetweenActions": 1500  // 操作间基础延迟（毫秒）
   }
 }
 ```
@@ -101,10 +102,11 @@ BROWSER_TYPE=chromium
 ## 💡 使用建议
 
 ### 首次使用
-1. ⚠️ **先小批量测试**：设置 `maxDeletePerSession: 10`
+1. ⚠️ **先小批量测试**：保持默认 `maxDeletePerSession: 5`
 2. 📖 **阅读 README**：了解登录方式和配置选项
 3. 💾 **重要内容备份**：删除操作不可逆
 4. 🔧 **准备选择器配置**：熟悉选择器更新方法（以防 Twitter 更新）
+5. 👀 **关注清理只读起步**：需要清理关注时先运行 `npm run start -- followings export`，不要启用旧式 `deleteOptions.following`
 
 ### 日常使用
 - 使用**生产模式**（`start.bat` 或 `start.sh`）

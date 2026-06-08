@@ -15,17 +15,31 @@ This checklist defines the public repository surface that helps new users decide
 | Bug and feature intake | Ready | [../.github/ISSUE_TEMPLATE](../.github/ISSUE_TEMPLATE) |
 | Pull request checklist | Ready | [../.github/PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md) |
 | Security policy | Ready | [../SECURITY.md](../SECURITY.md) |
-| npm package contents check | Ready | `npm pack --dry-run` |
+| npm CLI metadata | Ready | [../package.json](../package.json) |
+| npm package contents check | Ready | `npm run release:check` |
+| Version story and release notes | Ready | [../CHANGELOG.md](../CHANGELOG.md) |
 
 ## Maintainer Release Gate
+
+Current release target: `1.0.0`, the first public npm / CLI-ready release. `0.1.0` is the earlier source-usable tag and should not be presented as an npm package release.
 
 Before publishing a release or asking users to try a new workflow:
 
 ```bash
 npm ci
-npm run verify
-npm pack --dry-run
+npm run release:check
+npm view x-account-cleaner version
 ```
+
+`npm view` returning `E404` is expected before the first npm publish. After the first publish, verify that the registry version is lower than the local `package.json` version before running `npm publish`.
+
+The package must install a real CLI entry:
+
+- `package.json` keeps `bin.x-account-cleaner` pointed at `dist/index.js`.
+- `prepack` builds `dist/` before tarball creation.
+- The tarball includes `README.md`, `QUICKSTART.md`, `CHANGELOG.md`, `LICENSE`, `config.json`, `selectors.json`, `env.example`, `docs/`, `scripts/`, `src/`, and `dist/`.
+- `x-account-cleaner --help`, `x-account-cleaner --version`, and `x-account-cleaner followings --help` must not open a browser or touch an account.
+- npm / npx documentation must explain that runtime config is read from the current working directory.
 
 For behavior that touches real X / Twitter pages, also run a headful manual smoke test with a low `maxDeletePerSession` and confirm the generated `logs/run-summary-*.json` contains the expected command, config, selector source, and status.
 

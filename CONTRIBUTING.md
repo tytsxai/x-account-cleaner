@@ -96,11 +96,10 @@ npm run build
 在提交前，请确保：
 
 ```bash
-npm run verify
-npm pack --dry-run
+npm run release:check
 ```
 
-`npm run verify` 会执行 TypeScript 编译、ESLint、Prettier 检查、CLI 帮助命令测试、选择器配置测试和关注管理核心测试。`npm pack --dry-run` 用于确认公开包不会带入 `.claude`、日志、浏览器数据或其他本地文件。
+`npm run release:check` 会先执行 `npm run verify`，再执行 `npm pack --dry-run`。`verify` 覆盖 TypeScript 编译、ESLint、Prettier 检查、CLI 帮助命令测试、选择器配置测试和关注管理核心测试；pack dry-run 用于确认公开包不会带入日志、浏览器数据、关注导出文件或其他本地私密文件。
 
 如果改动影响真实 X / Twitter 页面自动化，还需要用 `HEADLESS=false` 和小批量配置做一次人工浏览器验证。
 
@@ -120,7 +119,6 @@ npm pack --dry-run
 - 查看现有的 Issues 和 Discussions
 
 再次感谢你的贡献！🎉
-
 
 
 

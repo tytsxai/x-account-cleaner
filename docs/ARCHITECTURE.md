@@ -23,7 +23,7 @@ x-account-cleaner/
 │   └── index.ts             # 主入口
 ├── docs/                     # 文档
 ├── logs/                     # 日志文件（自动生成）
-├── browser-data/             # 浏览器数据（自动生成）
+├── browser-data/             # 浏览器数据（自动生成，含 profile/ 与 state.json）
 ├── config.json               # 用户配置
 ├── .env                      # 环境变量
 └── package.json              # 项目配置
@@ -54,24 +54,32 @@ x-account-cleaner/
 **职责**：
 - 浏览器生命周期管理
 - 浏览器配置和初始化
-- 登录状态持久化
+- 持久浏览器 profile 与登录状态快照管理
 - 反自动化检测
 
 **关键方法**：
 - `initialize()`: 初始化浏览器
-- `saveState()`: 保存登录状态
+- `saveState()`: 保存 `state.json` 登录状态快照
 - `close()`: 关闭浏览器
+
+**会话状态职责拆分**：
+- `USER_DATA_DIR/profile/` 是主会话存储，由 `launchPersistentContext()` 使用，长期保存 cookies、localStorage、IndexedDB、Service Worker 和浏览器 profile 元数据。
+- `USER_DATA_DIR/state.json` 是 `saveState()` 写出的 Playwright storage-state 快照，主要用于审计、迁移和新 profile 的 cookie 恢复，不是已建立 profile 的唯一登录状态来源。
+- `USER_DATA_DIR` 根目录保留项目控制文件，例如 `run.lock` 和 `state.json`，避免和浏览器 profile 内部文件混放。
+- `initialize()` 启动失败时会关闭已创建的 page/context，并只清理本次新建的空 `profile/`；已有 profile 不会被自动删除。
 
 #### LoginManager (`src/core/login.ts`)
 
 **职责**：
 - Twitter 登录管理
-- 登录状态检测
+- 基于已认证 DOM 信号进行登录状态检测
+- 自动登录分阶段重试：导航、用户名、验证 detour、密码、提交、最终校验
+- 手动登录等待验证码、二次验证、账号访问限制和页面延迟渲染
 - 用户信息获取
 
 **关键方法**：
 - `login()`: 执行登录
-- `isLoggedIn()`: 检查登录状态
+- `isLoggedIn()`: 导航到主页并通过 DOM 信号检查登录状态
 - `getUsername()`: 获取用户名
 
 #### TwitterDeleter (`src/core/deleter.ts`)
@@ -137,6 +145,8 @@ x-account-cleaner/
 - 重试机制封装
 - 延迟控制
 - 指数退避
+- 按错误类型决定是否重试
+- 识别 `RateLimitError.retryAfterMs` 并使用更长退避
 
 **关键方法**：
 - `withRetry()`: 重试包装器
@@ -167,6 +177,9 @@ x-account-cleaner/
 浏览器初始化（browser.ts）
     ↓
 登录验证（login.ts）
+    ├→ 已认证 DOM 信号检测
+    ├→ 自动登录分阶段重试
+    └→ 手动登录/验证 detour 等待
     ↓
 删除执行（deleter.ts）
     ├→ 元素选择（selector.ts）
@@ -264,7 +277,14 @@ await withRetry(
 对网络操作和 DOM 操作使用重试：
 - 最大重试次数
 - 指数退避
-- 失败回调
+- 可选延迟上限、抖动和总耗时限制
+- `retryOn` 分类重试
+- 频率限制使用 `RateLimitError.retryAfterMs` 延长等待
+
+删除器在每次破坏性动作前后检测阻断状态：
+- 频率限制：按可重试阻断处理，进入退避重试
+- 页面临时异常：按可重试阻断处理
+- 登录验证、账号锁定、访问受限、异常活动：按非重试阻断停止流程
 
 ### 3. 日志记录
 
@@ -289,6 +309,8 @@ deletePerBatch: 5  // 每批 5 条
 delayBetweenActions: 2000   // 操作间延迟
 delayBetweenBatches: 3000   // 批次间延迟
 ```
+
+滚动和点击 helper 内部已经包含短等待，删除循环不再额外叠加同类固定等待；成功动作后的节流仍由 `delayBetweenActions + delayJitterMs` 控制。
 
 ### 3. 智能等待
 
@@ -436,9 +458,6 @@ interface Config {
 ✅ **错误恢复**：完善的重试和日志
 
 这种架构适合当前规模，也为未来扩展预留了空间。
-
-
-
 
 
 

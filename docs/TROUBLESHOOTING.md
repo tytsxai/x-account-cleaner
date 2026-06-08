@@ -120,6 +120,9 @@ sudo apt-get install -y \
 2. Twitter 要求额外验证
 3. IP 被标记为可疑
 4. 登录流程变化
+5. 页面已跳转但已认证 DOM 尚未加载完成
+
+自动登录会按阶段重试：导航到登录页、输入用户名、检测验证 detour、输入密码、提交、等待已认证 DOM。日志中的“自动登录阶段 xxx”可以帮助判断卡在登录页渲染、用户名步骤、密码步骤还是最终校验。
 
 **解决方案**：
 
@@ -146,11 +149,26 @@ sudo apt-get install -y \
    rm browser-data/state.json
    ```
 
+   `state.json` 只是登录状态快照。若需要完整重新登录，请同时删除持久浏览器 profile：
+
+   ```bash
+   # Windows
+   rmdir /s /q browser-data\profile
+
+   # macOS/Linux
+   rm -rf browser-data/profile
+   ```
+
 4. **增加调试日志**
    ```env
    LOG_LEVEL=debug
    HEADLESS=false  # 观察登录过程
    ```
+
+5. **处理验证 detour**
+   - 有头模式下，程序会保留当前验证页面并等待你手动完成
+   - `HEADLESS=true` 无法处理验证码、2FA、账号访问限制或身份确认页，请改用 `HEADLESS=false`
+   - 不建议频繁删除登录状态反复尝试；若账号进入风控页，先人工完成验证并等待一段时间
 
 ### Q: 登录后提示"无法获取用户名"
 
@@ -163,6 +181,18 @@ sudo apt-get install -y \
 2. **修改代码获取用户名的逻辑**
    - 查看 `src/core/login.ts` 的 `getUsername()` 方法
    - 根据实际页面结构调整
+
+### Q: 浏览器已经显示主页，但程序仍提示未登录
+
+**原因**：
+
+程序现在以已认证 DOM 信号为准，不再只看 URL。X / Twitter 有时会先跳到 `/home`，但账号菜单、个人资料导航或主页外壳还没加载完成，此时直接继续执行容易误删失败或触发后续异常。
+
+**解决方案**：
+
+1. 等待页面完整加载，确认左侧导航和账号菜单可见
+2. 设置 `LOG_LEVEL=debug` 观察是否仍处于验证、登录流程或页面延迟渲染
+3. 若页面出现验证码、账号访问限制或异常活动提示，请先人工处理后再运行
 
 ## 删除问题
 
@@ -228,6 +258,21 @@ sudo apt-get install -y \
 1. 重新运行程序（会继续删除剩余内容）
 2. 增加重试次数和延迟
 3. 手动删除失败的内容
+
+### Q: 日志提示检测到阻断状态
+
+**频率限制**：
+- 程序会按 `RateLimitError` 进入较长退避重试
+- 如果多次重试后仍失败，降低 `deletePerBatch`，增大 `delayBetweenActions` / `delayBetweenBatches`，并暂停一段时间再运行
+
+**账号访问受限、验证、锁定或异常活动**：
+- 程序会停止删除流程，不会把这类状态当作普通单条失败继续跳过
+- 使用 `HEADLESS=false` 打开浏览器人工处理验证或账号页面
+- 账号恢复后先用默认小批量上限重新验证，不要直接恢复大批量清理
+
+**页面临时异常**：
+- 程序会按可重试阻断处理
+- 重试耗尽后，手动刷新对应页面确认是否是平台临时异常或选择器失效
 
 ## 选择器更新
 
@@ -296,7 +341,8 @@ sudo apt-get install -y \
 
 | 错误信息 | 含义 | 解决方案 |
 |---------|------|---------|
-| `配置文件 config.json 不存在` | 缺少配置文件 | 检查文件是否存在 |
+| `配置文件 config.json 不存在` | 当前运行目录缺少配置文件 | 源码运行时检查文件是否存在；npm 安装时执行 `cp node_modules/x-account-cleaner/config.json . && cp node_modules/x-account-cleaner/selectors.json .` |
+| `默认清理流程没有启用任何 deleteOptions` | 默认入口没有可执行清理类目 | 在 `config.json` 启用目标类目；只做关注管理时改用 `x-account-cleaner followings export` |
 | `浏览器上下文未初始化` | 浏览器启动失败 | 查看浏览器日志 |
 | `无法获取用户名` | 未能识别当前用户 | 手动导航到个人主页 |
 | `TimeoutError` | 元素等待超时 | 增加 `pageRefreshDelay` |
@@ -335,10 +381,6 @@ sudo apt-get install -y \
 ---
 
 **提示**：大多数问题可以通过查看日志文件找到原因。
-
-
-
-
 
 
 

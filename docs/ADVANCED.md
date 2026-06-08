@@ -75,10 +75,13 @@ Twitter 经常更新页面结构，导致默认选择器失效。你需要根据
 **参数说明：**
 - `delayJitterMs`：动作延迟的随机抖动范围（越小越快，但更容易触发限制）
 - `refreshBatchInterval`：每 N 个批次刷新一次页面（减少刷新频率可提升速度）
+- `retryConfig.retryDelay`：普通动作失败的基础重试延迟；频率限制会触发更长的内部退避，不建议用很小的值压缩重试间隔
 
 ### 稳定模式（保守模式）
 
 适用于重要账号，避免触发限制：
+
+首次运行仍建议使用根目录 `config.json` 的默认 `maxDeletePerSession: 5`；下面配置适合已经完成小批量验证后的长期分批清理。
 
 ```json
 {
@@ -454,8 +457,8 @@ class ProgressTracker {
 ### 代理设置
 
 ```typescript
-// 在 BrowserManager 中添加代理支持
-this.context = await this.browser.newContext({
+// 在 BrowserManager 的 launchPersistentContext() 选项中添加代理支持
+this.context = await browserType.launchPersistentContext(profileDir, {
   proxy: {
     server: 'http://proxy-server:port',
     username: 'user',
@@ -464,28 +467,21 @@ this.context = await this.browser.newContext({
 });
 ```
 
-### 请求头随机化
+### 稳定请求画像
 
 ```typescript
-const userAgents = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ...',
-  // ... 更多
-];
-
-const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
-
-this.context = await this.browser.newContext({
-  userAgent: randomUA,
+this.context = await browserType.launchPersistentContext(profileDir, {
+  userAgent: envConfig.userAgent,
+  locale: envConfig.locale,
+  timezoneId: envConfig.timezoneId,
 });
 ```
+
+同一账号应长期保持同一个 `USER_DATA_DIR/profile/` 和同一套 UA、视口、语言、时区配置；频繁随机化画像更容易造成异常漂移。
 
 ---
 
 更多高级用法请参考源代码或提交 Issue 讨论。
-
-
-
 
 
 
