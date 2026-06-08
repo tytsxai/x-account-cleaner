@@ -458,6 +458,7 @@ export class TwitterDeleter {
 
   private shouldAbortDeletion(error: unknown): boolean {
     return (
+      isCancellationError(error) ||
       error instanceof NonRetryableError ||
       error instanceof RateLimitError ||
       (error instanceof RetryableError && error.message.includes('检测到阻断状态'))
@@ -577,7 +578,7 @@ export class TwitterDeleter {
 
       await sleep(executionConfig.delayBetweenBatches);
     } catch (error) {
-      if (this.shouldAbortDeletion(error) || isCancellationError(error)) {
+      if (this.shouldAbortDeletion(error)) {
         throw error;
       }
       log.error('删除批次出错', error);
