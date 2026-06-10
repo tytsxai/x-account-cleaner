@@ -1,6 +1,8 @@
 # 快速开始指南 / Quick Start
 
-5 分钟快速上手 **X Account Cleaner**，一个本地运行的 X / Twitter 账号清理工具。
+5 分钟快速上手 **X Account Cleaner**：一个本地运行的开源 X / Twitter 账号清理 CLI。它通过 Playwright 控制你自己的浏览器会话，适合批量清理推文、回复、转推、点赞、书签，以及按人工确认名单管理关注取关。
+
+**Safe first step:** `--help`、`--version` 和 `followings --help` 只打印 CLI 信息，不会打开浏览器或操作账号。首次运行请先用这些命令确认入口，再做小批量有头试跑。
 
 ## 第一步：选择运行方式
 
@@ -107,20 +109,19 @@ npm run start:prod
 ```
 
 程序会：
-1. ✓ 打开浏览器
-2. ✓ 自动登录（或等待你手动登录）
-3. ✓ 显示配置信息
-4. ✓ 倒计时 10 秒
-5. ✓ 开始删除
-6. ✓ 显示进度和统计
+1. 打开浏览器
+2. 自动登录或等待你手动登录
+3. 显示配置信息
+4. 倒计时 10 秒
+5. 开始执行已启用的清理类目
+6. 显示进度和统计，并写入 `logs/run-summary-*.json`
 
-## 🎉 完成！
+## 首次运行建议
 
-首次运行建议：
-- 保持默认 `maxDeletePerSession: 5` 测试
-- 第一次只启用 1-2 个内容类目，确认页面识别正确后再扩大范围
-- 观察浏览器操作是否正常
-- 确认无误后再增加删除数量
+- 保持默认 `maxDeletePerSession: 5` 测试。
+- 第一次只启用 1-2 个内容类目，确认页面识别正确后再扩大范围。
+- 保持 `HEADLESS=false`，观察浏览器操作是否正常。
+- 确认无误后再增加删除数量。
 - 如果只想管理关注列表，先运行 `npx x-account-cleaner followings export` 或 `npm run start -- followings export`，再阅读 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)
 - 遇到命令不确定时先运行 `npx x-account-cleaner --help` 或 `npm run start -- --help`
 
@@ -140,16 +141,15 @@ npm run start:prod
 
 ## 下一步
 
-- 📖 阅读 [README.md](README.md) 了解详细功能
-- 📚 查看 [docs/README.md](docs/README.md) 选择后续文档
-- 🔧 查看 [故障排查指南](docs/TROUBLESHOOTING.md)
-- 🚀 探索 [高级用法](docs/ADVANCED.md)
-- ✅ 准备贡献或发版时运行 `npm run release:check`
+- 阅读 [README.md](README.md) 了解详细功能。
+- 查看 [docs/README.md](docs/README.md) 选择后续文档。
+- 查看 [故障排查指南](docs/TROUBLESHOOTING.md)。
+- 探索 [高级用法](docs/ADVANCED.md)。
+- 准备贡献或发版时运行 `npm run release:check`。
 
 ---
 
 **警告**：删除的内容无法恢复，请谨慎操作！
-
 
 
 
