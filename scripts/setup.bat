@@ -9,8 +9,15 @@ echo.
 echo [1/5] 检查 Node.js...
 node --version >nul 2>&1
 if errorlevel 1 (
-    echo ❌ 未检测到 Node.js，请先安装 Node.js 16 或更高版本
+    echo ❌ 未检测到 Node.js，请先安装 Node.js 18.18.0 或更高版本
     echo 下载地址: https://nodejs.org/
+    pause
+    exit /b 1
+)
+node -e "const v=process.versions.node.split('.').map(Number);process.exit(v[0]>18||(v[0]===18&&v[1]>=18)?0:1)" >nul 2>&1
+if errorlevel 1 (
+    echo ❌ Node.js 版本过低，请升级到 18.18.0 或更高版本
+    node --version
     pause
     exit /b 1
 )
@@ -87,7 +94,6 @@ echo 详细文档请查看: README.md
 echo 快速开始请查看: QUICKSTART.md
 echo.
 pause
-
 
 
 

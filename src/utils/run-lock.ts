@@ -20,21 +20,35 @@ export type RunLock = {
 const HEARTBEAT_INTERVAL_MS = 5000;
 const HEARTBEAT_TTL_MS = 15000;
 
-function validateLockPath(userDataDir: string): string {
-  const normalized = path.normalize(userDataDir);
+function resolveLockDir(userDataDir: string): string {
+  const trimmed = userDataDir.trim();
 
-  if (!normalized || normalized === '.' || normalized === path.sep) {
-    throw new Error(`userDataDir 不能为空且不能指向根目录: ${userDataDir}`);
-  }
-  if (path.isAbsolute(normalized)) {
-    throw new Error(`userDataDir 必须是相对路径: ${userDataDir}`);
-  }
-  const segments = normalized.split(path.sep).filter(Boolean);
-  if (segments.includes('..')) {
-    throw new Error(`userDataDir 不能包含 ..: ${userDataDir}`);
+  if (!trimmed) {
+    throw new Error(`userDataDir 不能为空且不能指向当前目录: ${userDataDir}`);
   }
 
-  return path.join(process.cwd(), normalized);
+  if (!path.isAbsolute(trimmed)) {
+    const rawSegments = trimmed.split(/[\\/]+/).filter(Boolean);
+    if (rawSegments.includes('..')) {
+      throw new Error(`userDataDir 不能包含 ..: ${userDataDir}`);
+    }
+  }
+
+  const normalized = path.normalize(trimmed);
+
+  if (!normalized || normalized === '.') {
+    throw new Error(`userDataDir 不能为空且不能指向当前目录: ${userDataDir}`);
+  }
+
+  const resolved = path.resolve(process.cwd(), normalized);
+  if (resolved === path.parse(resolved).root) {
+    throw new Error(`userDataDir 不能指向根目录: ${userDataDir}`);
+  }
+  if (resolved === process.cwd()) {
+    throw new Error(`userDataDir 不能指向当前项目根目录: ${userDataDir}`);
+  }
+
+  return resolved;
 }
 
 function isProcessRunning(pid: number): boolean {
@@ -92,7 +106,7 @@ function safeUnlink(lockPath: string, context: string): void {
 }
 
 export function acquireRunLock(runId: string, userDataDir: string): RunLock {
-  const lockDir = validateLockPath(userDataDir);
+  const lockDir = resolveLockDir(userDataDir);
   fs.mkdirSync(lockDir, { recursive: true });
 
   const lockPath = path.join(lockDir, 'run.lock');

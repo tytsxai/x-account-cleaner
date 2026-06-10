@@ -16,6 +16,13 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
+node -e "const v=process.versions.node.split('.').map(Number);process.exit(v[0]>18||(v[0]===18&&v[1]>=18)?0:1)" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [错误] Node.js 版本过低，请升级到 18.18.0 或更高版本
+    node --version
+    pause
+    exit /b 1
+)
 
 echo [✓] Node.js 已安装
 node --version
@@ -77,7 +84,6 @@ echo 2. （可选）复制 env.example 为 .env 并配置登录信息
 echo 3. 运行 start.bat 启动程序
 echo.
 pause
-
 
 
 

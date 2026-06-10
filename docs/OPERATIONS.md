@@ -33,6 +33,7 @@
 ## 设备画像与防封号建议
 
 - 同一账号长期使用同一个 `USER_DATA_DIR`，避免登录状态、Cookie、localStorage 频繁重建
+- `USER_DATA_DIR` 可以是相对路径（如 `./browser-data`）或绝对路径（如 `/var/lib/x-account-cleaner/account-a`），但必须指向专用账号数据目录；空值、项目根目录、文件系统根目录、相对路径中的 `..` 会被拒绝
 - `USER_DATA_DIR/profile/` 是浏览器主 profile；`USER_DATA_DIR/state.json` 是登录状态快照，用于审计、迁移和新 profile 的 cookie 恢复
 - 同一账号保持稳定浏览器画像：`BROWSER_USER_AGENT`、`BROWSER_VIEWPORT_WIDTH/HEIGHT`、`BROWSER_DEVICE_SCALE_FACTOR`、`BROWSER_LOCALE`、`BROWSER_TIMEZONE_ID`
 - 默认视口为 `1512 x 982` CSS px，贴近 14 英寸 MacBook Pro 全屏浏览器基准
@@ -68,6 +69,7 @@
 
 - 工具会在 `USER_DATA_DIR` 下创建 `run.lock`，防止多实例并发操作同一账号
 - 浏览器 persistent profile 也要求同一 `USER_DATA_DIR/profile/` 同一时间只能被一个进程使用
+- 运行锁和浏览器状态使用同一套 `USER_DATA_DIR` 路径解析规则，支持相对路径和绝对路径
 - 如出现“已有实例正在运行”的错误，请先确认是否真的有实例在运行
 - 若确认无实例运行，可手动删除 `USER_DATA_DIR/run.lock` 后重试
 

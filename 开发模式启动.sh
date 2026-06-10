@@ -24,6 +24,11 @@ if ! command -v node &> /dev/null; then
     echo "下载地址: https://nodejs.org/"
     exit 1
 fi
+if ! node -e "const v=process.versions.node.split('.').map(Number);process.exit(v[0]>18||(v[0]===18&&v[1]>=18)?0:1)" >/dev/null 2>&1; then
+    echo -e "${RED}[错误] Node.js 版本过低，请升级到 18.18.0 或更高版本${NC}"
+    node --version
+    exit 1
+fi
 
 echo -e "${GREEN}[✓] Node.js 已安装${NC}"
 node --version
@@ -104,4 +109,3 @@ if [ $? -ne 0 ]; then
     echo -e "${RED}[错误] 程序执行出错${NC}"
     exit 1
 fi
-

@@ -134,6 +134,16 @@ function buildEnvSummary() {
   };
 }
 
+function captureConfigSummary(config: Config): void {
+  runContext.config = {
+    deleteOptions: config.deleteOptions,
+    executionConfig: config.executionConfig,
+    retryConfig: config.retryConfig,
+    urls: config.urls,
+  };
+  runContext.selectors = getSelectorsMetadata();
+}
+
 function getSelectorsMetadata() {
   const selectorsPath = path.join(process.cwd(), 'selectors.json');
   if (!fs.existsSync(selectorsPath)) {
@@ -254,13 +264,7 @@ async function prepareLoggedInPage(
   }
 
   runContext.username = username;
-  runContext.config = {
-    deleteOptions: config.deleteOptions,
-    executionConfig: config.executionConfig,
-    retryConfig: config.retryConfig,
-    urls: config.urls,
-  };
-  runContext.selectors = getSelectorsMetadata();
+  captureConfigSummary(config);
   log.success(`当前用户: @${username}`);
 
   return { page, username };
@@ -280,6 +284,7 @@ async function runFollowingsCommand(parsedArgs: ParsedArgs): Promise<void> {
     : config.followingPlan?.mode || config.followingManagement?.defaultMode || 'export';
 
   runContext.env = buildEnvSummary();
+  captureConfigSummary(config);
 
   if (subcommand === 'classify') {
     const input = getStringOption(parsedArgs, 'input') || config.followingPlan?.input || null;
@@ -505,13 +510,7 @@ async function main() {
         '为降低账号风险，已默认禁止 deleteOptions.following 旧式直接取关。请使用 `npm run start -- followings export/classify/dry-run/execute`；如确需旧路径，设置 ALLOW_LEGACY_FOLLOWING_DELETE=true。'
       );
     }
-    runContext.config = {
-      deleteOptions: config.deleteOptions,
-      executionConfig: config.executionConfig,
-      retryConfig: config.retryConfig,
-      urls: config.urls,
-    };
-    runContext.selectors = getSelectorsMetadata();
+    captureConfigSummary(config);
 
     // 初始化浏览器
     browserManager = new BrowserManager();

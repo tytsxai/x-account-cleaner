@@ -272,7 +272,16 @@ export function loadConfig(): Config {
   }
 
   const configContent = fs.readFileSync(configPath, 'utf-8');
-  const config: Config = JSON.parse(configContent);
+  let config: Config;
+
+  try {
+    config = JSON.parse(configContent) as Config;
+  } catch (error) {
+    throw new Error(
+      `config.json 解析失败：${error instanceof Error ? error.message : String(error)}。` +
+        '请修复 JSON 格式后再运行，可先对照仓库中的 config.json 或重新复制默认配置。'
+    );
+  }
 
   // 尝试加载独立的选择器配置
   const selectorsFromFile = loadSelectors();

@@ -12,8 +12,13 @@ echo ""
 # 检查 Node.js
 echo "[1/5] 检查 Node.js..."
 if ! command -v node &> /dev/null; then
-    echo "❌ 未检测到 Node.js，请先安装 Node.js 16 或更高版本"
+    echo "❌ 未检测到 Node.js，请先安装 Node.js 18.18.0 或更高版本"
     echo "下载地址: https://nodejs.org/"
+    exit 1
+fi
+if ! node -e "const v=process.versions.node.split('.').map(Number);process.exit(v[0]>18||(v[0]===18&&v[1]>=18)?0:1)" >/dev/null 2>&1; then
+    echo "❌ Node.js 版本过低，请升级到 18.18.0 或更高版本"
+    node --version
     exit 1
 fi
 node --version
@@ -85,7 +90,6 @@ echo ""
 echo "详细文档请查看: README.md"
 echo "快速开始请查看: QUICKSTART.md"
 echo ""
-
 
 
 

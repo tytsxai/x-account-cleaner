@@ -33,7 +33,7 @@ npm run verify
 - 默认清理入口必须至少启用一个 `deleteOptions`；只做关注管理时使用 `followings` 子命令。
 - 首次生产运行使用默认小批量：`maxDeletePerSession: 5`，并注意该上限按每个启用类目计算。
 - `LOG_TO_FILE=true`，需要自动化监控时设置 `FAIL_ON_ERRORS=true`。
-- 同一账号固定 `USER_DATA_DIR`，不要多实例或多机器同时操作；`USER_DATA_DIR/profile/` 是主浏览器会话，`state.json` 只是快照。
+- 同一账号固定专用 `USER_DATA_DIR`，不要多实例或多机器同时操作；该目录可用相对路径或绝对路径，但不能指向项目根、文件系统根或包含 `..` 的相对路径；`USER_DATA_DIR/profile/` 是主浏览器会话，`state.json` 只是快照。
 - 关注取关必须经过 `export -> classify -> 人工编辑 approved-unfollow.jsonl -> dry-run -> execute`。
 
 ## 仍需人工确认
