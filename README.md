@@ -17,6 +17,19 @@
 **Package:** `x-account-cleaner`<br>
 **旧名称 / Alias:** `twitter-auto-cleaner`
 
+## 30 秒判断是否适合 / 30-Second Fit
+
+| 你想做什么 | 是否适合 | 说明 |
+|---|---|---|
+| 清理自己账号的历史推文、回复、转推、点赞或书签 | 适合 | 通过 Playwright 操作当前登录的 X / Twitter 网页端 |
+| 注销账号、停用小号、账号转交前做本地内容清理 | 适合 | 默认小批量、有头浏览器、可观察执行过程 |
+| 复核关注列表并按确认名单取关 | 适合 | 使用 `followings export -> classify -> dry-run -> execute` |
+| 不想申请 X API Key，也不想把账号交给第三方服务 | 适合 | 本机运行，不调用官方 X API，不提供托管服务 |
+| 按日期、关键词、互动数精确筛选推文后删除 | 暂不适合 | 当前版本没有这类精确筛选能力 |
+| 操作他人账号、规避风控、刷量或恢复已删除内容 | 不适合 | 项目不支持也不鼓励这类用途 |
+
+推荐的第一次尝试：先运行 `npx x-account-cleaner --help`，再保持 `HEADLESS=false` 和 `maxDeletePerSession: 5` 做有头小批量试跑。
+
 ## 项目事实卡 / Project Facts
 
 | 维度 | 说明 |
@@ -42,6 +55,21 @@
 - **关注取关有安全闭环**：导出、规则筛选、人工复核、dry-run、确认文件、慢速执行和 resume 分开处理。
 - **选择器可维护**：X 页面变动时优先更新 [selectors.json](selectors.json)，不必直接改核心逻辑。
 - **可验证工程面**：`npm run verify` 覆盖编译、lint、格式、CLI 帮助、选择器配置和关注管理核心测试；GitHub Actions 会在 PR 上执行同一套检查。
+
+## 能力边界速览 / Capability Matrix
+
+| 能力 | 当前支持 | 主要入口 | 注意事项 |
+|---|---|---|---|
+| 删除推文 | 支持 | `deleteOptions.tweets` | 按页面可见内容和配置上限执行 |
+| 删除回复 | 支持 | `deleteOptions.replies` | 走个人主页 replies 页面 |
+| 取消转推 | 支持 | `deleteOptions.retweets` | 依赖网页端转推按钮选择器 |
+| 取消点赞 | 支持 | `deleteOptions.likes` | 走个人 likes 页面，删除不可恢复 |
+| 删除书签 | 支持 | `deleteOptions.bookmarks` | 走 bookmarks 页面 |
+| 关注列表导出 | 支持 | `followings export` | 只读导出 JSONL / CSV |
+| 关注候选筛选 | 支持 | `followings classify` | 本地规则筛选，结果必须人工复核 |
+| 确认名单取关 | 支持 | `followings execute` | 默认要求 `approved-unfollow.jsonl` 和有头浏览器 |
+| 精确按日期/关键词删推 | 暂不支持 | 无 | 可作为后续功能讨论 |
+| 官方 API 模式 | 不支持 | 无 | 本项目是网页端自动化 CLI |
 
 ## 解决什么问题
 
@@ -350,7 +378,7 @@ x-account-cleaner/
 
 如果你维护这个仓库，可以在 GitHub repository topics 中加入：
 
-`x` · `twitter` · `twitter-cleaner` · `x-account-cleaner` · `account-cleaner` · `bulk-delete-tweets` · `bulk-unlike` · `bulk-unfollow` · `twitter-bookmark-cleaner` · `playwright` · `typescript` · `browser-automation` · `local-first` · `privacy-tool`
+`x` · `twitter` · `twitter-cleaner` · `x-account-cleaner` · `x-account-cleanup-tool` · `account-cleaner` · `tweet-cleaner` · `twitter-delete-tool` · `bulk-delete-tweets` · `bulk-unlike` · `unlike-tweets` · `bulk-unfollow` · `twitter-bookmark-cleaner` · `social-media-cleanup` · `playwright` · `typescript` · `browser-automation` · `local-first` · `privacy-tool`
 
 ## 免责声明 / Disclaimer
 

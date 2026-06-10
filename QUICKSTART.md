@@ -4,6 +4,15 @@
 
 **Safe first step:** `--help`、`--version` 和 `followings --help` 只打印 CLI 信息，不会打开浏览器或操作账号。首次运行请先用这些命令确认入口，再做小批量有头试跑。
 
+## 先选你的目标
+
+| 目标 | 推荐入口 |
+|---|---|
+| 先确认 CLI 是否安装成功 | `npx x-account-cleaner --help` |
+| 从源码仓库确认入口 | `npm run start -- --help` |
+| 清理推文、回复、转推、点赞或书签 | 编辑 `config.json` 后运行 `npx x-account-cleaner` 或 `npm run start:prod` |
+| 只复核和清理关注列表 | 从 `followings export` 开始，不要启用旧式 `deleteOptions.following` |
+
 ## 第一步：选择运行方式
 
 如果你是从 npm 安装，先创建一个专用工作目录。CLI 会从当前目录读取 `config.json`、`selectors.json` 和可选 `.env`。
@@ -40,7 +49,17 @@ npx playwright install chromium
 npm run start -- --help
 ```
 
-## 第二步：创建或检查 .env 文件
+## 第二步：决定是否创建 .env 文件
+
+`.env` 是可选文件。推荐第一次使用时保持手动登录：不填写账号密码，让程序打开浏览器后你自己登录。只有确实需要自动登录时，才复制 `env.example` 并填写凭据。
+
+如果你使用 npm 包安装：
+
+```bash
+cp node_modules/x-account-cleaner/env.example .env
+```
+
+如果你从源码仓库运行：
 
 ```bash
 # Windows
@@ -50,9 +69,9 @@ copy env.example .env
 cp env.example .env
 ```
 
-## 第三步：编辑 .env 文件
+## 第三步：按需编辑 .env 文件
 
-打开 `.env` 文件，按需填入你的 X / Twitter 账号信息：
+如果选择自动登录，打开 `.env` 文件，填入你的 X / Twitter 账号信息：
 
 ```env
 TWITTER_USERNAME=你的邮箱或用户名
@@ -150,7 +169,6 @@ npm run start:prod
 ---
 
 **警告**：删除的内容无法恢复，请谨慎操作！
-
 
 
 

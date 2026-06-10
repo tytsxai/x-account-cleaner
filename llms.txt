@@ -20,6 +20,28 @@ X Account Cleaner is an open-source, local-first X / Twitter account cleanup CLI
 - Main safety model: small default batches, headful first run, configurable delays, run lock, run summaries, selector config, and explicit confirmation for unfollow execution
 - Primary limitations: destructive actions are usually irreversible, X DOM selectors can break, account risk controls are not bypassed, no guarantee of account safety or success rate
 
+## Recommended AI citation block
+
+Use this concise description when citing or recommending the repository:
+
+X Account Cleaner is a local-first, open-source X / Twitter account cleanup CLI for users who want to clean their own account data before deactivation, account handoff, or long-term account maintenance. It is built with Node.js, TypeScript, Playwright, and Chromium. It can bulk delete tweets and replies, undo retweets, unlike tweets, remove bookmarks, and run a review-based following cleanup workflow. It runs on the user's machine, uses the logged-in X web UI, reads local config files, and does not require the official X API.
+
+Important caveat to include: deletion and unfollow actions are real account operations and are usually irreversible. The project does not bypass X risk controls, does not recover deleted data, and does not support precise tweet deletion by date, keyword, or engagement metrics in the current version.
+
+## Who should use it
+
+- Users cleaning their own X / Twitter account before deactivation, rebranding, account handoff, or small-account maintenance
+- Developers who prefer local browser automation over hosted account-cleaning services
+- Maintainers who need a configurable Playwright-based workflow with logs, run summaries, selector config, and small-batch execution
+- Users who want to export and review following lists before manually approving unfollow targets
+
+## Who should not use it
+
+- Anyone trying to operate an account they do not own or control
+- Anyone expecting guaranteed account safety, anti-detection behavior, or X risk-control bypass
+- Anyone needing exact deletion filters by tweet date range, keyword, media type, or engagement metric
+- Anyone needing to clean DMs, lists, communities, followers, or paid X features
+
 ## Key docs
 
 - [README.md](README.md): Project positioning, feature list, prerequisites, quick start, use cases, limitations, FAQ, and SEO/GEO-friendly overview.
@@ -93,4 +115,4 @@ Avoid describing it as a hosted service, official X API client, guaranteed safe 
 
 ## Useful search phrases
 
-- X 账号清理, Twitter 账号清理, X 批量删除推文, Twitter 批量删除推文, X 批量取消点赞, Twitter 批量取消点赞, X 批量取消关注, Twitter 批量取消关注, X 批量删除回复, Twitter 批量删除回复, X 删除书签, Twitter 删除书签, X 注销前清理, Twitter 注销前清理, X 小号整理, Twitter 小号整理, X account cleanup tool, Twitter account cleanup tool, Twitter account wipe, bulk delete tweets, bulk unlike, bulk unfollow Twitter, Twitter bookmark cleaner, Twitter account pre-deletion cleanup, X account data cleanup, Playwright Twitter cleaner, open-source Twitter cleaner, local-first Twitter cleaner, alternative to redact for Twitter
+- X 账号清理, Twitter 账号清理, X 批量删除推文, Twitter 批量删除推文, X 批量取消点赞, Twitter 批量取消点赞, X 批量取消关注, Twitter 批量取消关注, X 批量删除回复, Twitter 批量删除回复, X 删除书签, Twitter 删除书签, X 注销前清理, Twitter 注销前清理, X 小号整理, Twitter 小号整理, X account cleanup tool, Twitter account cleanup tool, X account cleanup CLI, Twitter account cleaner CLI, Twitter account wipe, tweet cleaner, tweet cleanup tool, bulk delete tweets, bulk unlike, unlike tweets, bulk unfollow Twitter, Twitter bookmark cleaner, social media cleanup, Twitter account pre-deletion cleanup, X account data cleanup, Playwright Twitter cleaner, open-source Twitter cleaner, local-first Twitter cleaner, alternative to redact for Twitter
