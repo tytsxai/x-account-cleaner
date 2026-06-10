@@ -47,7 +47,7 @@ For behavior that touches real X / Twitter pages, also run a headful manual smok
 
 Recommended GitHub topics:
 
-`x`, `twitter`, `twitter-cleaner`, `x-account-cleaner`, `account-cleaner`, `bulk-delete-tweets`, `bulk-unlike`, `bulk-unfollow`, `twitter-bookmark-cleaner`, `playwright`, `typescript`, `browser-automation`, `privacy-tool`, `local-first`
+`x`, `twitter`, `twitter-cleaner`, `x-account-cleaner`, `x-account-cleanup-tool`, `account-cleaner`, `tweet-cleaner`, `twitter-delete-tool`, `bulk-delete-tweets`, `bulk-unlike`, `unlike-tweets`, `bulk-unfollow`, `twitter-bookmark-cleaner`, `social-media-cleanup`, `playwright`, `typescript`, `browser-automation`, `privacy-tool`, `local-first`
 
 ## Star-Friendly Positioning
 
