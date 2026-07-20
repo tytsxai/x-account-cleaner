@@ -8,58 +8,35 @@
 
 | 目标 | 推荐入口 |
 |---|---|
-| 先确认 CLI 是否安装成功 | `npx x-account-cleaner --help` |
-| 从源码仓库确认入口 | `npm run start -- --help` |
-| 清理推文、回复、转推、点赞或书签 | 编辑 `config.json` 后运行 `npx x-account-cleaner` 或 `npm run start:prod` |
-| 只复核和清理关注列表 | 从 `followings export` 开始，不要启用旧式 `deleteOptions.following` |
+| 先确认环境和 CLI 入口是否正常 | `npm run start -- --help` |
+| 清理推文、回复、转推、点赞或书签 | 编辑 `config.json` 后运行 `npm run build && npm run start:prod` |
+| 只复核和清理关注列表 | 从 `npm run start -- followings export` 开始，不要启用旧式 `deleteOptions.following` |
 
-## 第一步：选择运行方式
+> **安装方式说明：** 项目尚未发布到 npm，`npm install x-account-cleaner` 会返回 404。当前请克隆仓库从源码运行。
 
-如果你是从 npm 安装，先创建一个专用工作目录。CLI 会从当前目录读取 `config.json`、`selectors.json` 和可选 `.env`。
-
-```bash
-# 确保 Node.js 版本 >= 18.18.0
-node --version
-
-mkdir x-account-cleaner-workspace
-cd x-account-cleaner-workspace
-npm init -y
-npm install x-account-cleaner
-npx playwright install chromium
-
-cp node_modules/x-account-cleaner/config.json .
-cp node_modules/x-account-cleaner/selectors.json .
-cp node_modules/x-account-cleaner/env.example .env
-
-# 查看命令帮助，不会打开浏览器或执行清理
-npx x-account-cleaner --help
-```
-
-如果你是直接克隆源码仓库：
+## 第一步：克隆仓库并安装依赖
 
 ```bash
 # 确保 Node.js 版本 >= 18.18.0
 node --version
 
-# 安装依赖
+git clone https://github.com/tytsxai/x-account-cleaner.git
+cd x-account-cleaner
+
+# 安装依赖和浏览器
 npm install
 npx playwright install chromium
 
 # 查看命令帮助，不会打开浏览器或执行清理
 npm run start -- --help
+npm run start -- followings --help
 ```
+
+程序会从当前工作目录读取 `config.json`、`selectors.json` 和可选 `.env`，仓库根目录已经带了可直接使用的默认配置。
 
 ## 第二步：决定是否创建 .env 文件
 
 `.env` 是可选文件。推荐第一次使用时保持手动登录：不填写账号密码，让程序打开浏览器后你自己登录。只有确实需要自动登录时，才复制 `env.example` 并填写凭据。
-
-如果你使用 npm 包安装：
-
-```bash
-cp node_modules/x-account-cleaner/env.example .env
-```
-
-如果你从源码仓库运行：
 
 ```bash
 # Windows
@@ -114,18 +91,12 @@ HEADLESS=false
 
 ## 第五步：运行程序
 
-如果使用 npm 包：
-
-```bash
-npx x-account-cleaner
-```
-
-如果使用源码仓库：
-
 ```bash
 npm run build
 npm run start:prod
 ```
+
+也可以直接用 ts-node 运行开发模式：`npm start`。
 
 程序会：
 1. 打开浏览器
@@ -141,8 +112,8 @@ npm run start:prod
 - 第一次只启用 1-2 个内容类目，确认页面识别正确后再扩大范围。
 - 保持 `HEADLESS=false`，观察浏览器操作是否正常。
 - 确认无误后再增加删除数量。
-- 如果只想管理关注列表，先运行 `npx x-account-cleaner followings export` 或 `npm run start -- followings export`，再阅读 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)
-- 遇到命令不确定时先运行 `npx x-account-cleaner --help` 或 `npm run start -- --help`
+- 如果只想管理关注列表，先运行 `npm run start -- followings export`，再阅读 [docs/FOLLOWING_MANAGEMENT.md](docs/FOLLOWING_MANAGEMENT.md)
+- 遇到命令不确定时先运行 `npm run start -- --help`
 
 ## 常见问题
 

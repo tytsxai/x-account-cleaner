@@ -17,6 +17,8 @@
 - 书签清理先尝试推文操作栏内的 `[data-testid='removeBookmark']`，找不到再回退到"更多"菜单路径，减少一次点击和菜单等待。
 - 文档明确说明 `primary` + `fallback` 会被合并成一条逗号分隔列表，命中顺序由 DOM 位置决定而非书写顺序，备用选择器不得匹配语义不同的按钮。
 - README 新增"页面兼容性"和"报告问题与参与共建"章节；`llms.txt` 补充域名、自动化边界和问题反馈入口。
+- 修正安装说明：包尚未发布到 npm，`npm install x-account-cleaner` 会 404。README、QUICKSTART、docs 索引和 `llms.txt` 统一改为"克隆仓库从源码运行"，npm / npx 用法待发布后再恢复。
+- GitHub repository topics 与 About 描述同步为双语定位；README 的 topics 章节改为记录实际已设置的清单。
 
 ### 计划添加
 

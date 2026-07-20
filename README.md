@@ -14,7 +14,7 @@
 **English positioning:** X Account Cleaner is an open-source, local-first X / Twitter account cleanup CLI built with Node.js, TypeScript, Playwright, and Chromium. It automates the logged-in X web UI on your own machine and does not require the official X API.
 
 **Repository:** <https://github.com/tytsxai/x-account-cleaner><br>
-**Package:** `x-account-cleaner`<br>
+**Package name (planned npm):** `x-account-cleaner`（尚未发布到 npm）<br>
 **旧名称 / Alias:** `twitter-auto-cleaner`
 
 ## 30 秒判断是否适合 / 30-Second Fit
@@ -28,7 +28,7 @@
 | 按日期、关键词、互动数精确筛选推文后删除 | 暂不适合 | 当前版本没有这类精确筛选能力 |
 | 操作他人账号、规避风控、刷量或恢复已删除内容 | 不适合 | 项目不支持也不鼓励这类用途 |
 
-推荐的第一次尝试：先运行 `npx x-account-cleaner --help`，再保持 `HEADLESS=false` 和 `maxDeletePerSession: 5` 做有头小批量试跑。
+推荐的第一次尝试：克隆仓库后先运行 `npm run start -- --help`，再保持 `HEADLESS=false` 和 `maxDeletePerSession: 5` 做有头小批量试跑。
 
 ## 项目事实卡 / Project Facts
 
@@ -106,40 +106,34 @@
 - Node.js >= 18.18.0
 - npm
 - Windows、macOS 或 Linux
+- Git（从源码克隆）
 - 一个可登录的 X / Twitter 账号
 
-### npm / npx 安装运行
+> **当前唯一可用的安装方式是从源码运行。** `x-account-cleaner` 尚未发布到 npm，`npm install x-account-cleaner` 现在会返回 404。CLI 入口（`bin`）和打包配置已经就绪，发布后本节会补上 npm / npx 用法。
 
-`x-account-cleaner` 会从当前工作目录读取 `config.json`、`selectors.json` 和可选的 `.env`。首次用 npm 包运行时，先创建一个专用工作目录，并从已安装的包里复制默认配置：
+### 从源码仓库运行（当前推荐）
 
 ```bash
-mkdir x-account-cleaner-workspace
-cd x-account-cleaner-workspace
-npm init -y
-npm install x-account-cleaner
+git clone https://github.com/tytsxai/x-account-cleaner.git
+cd x-account-cleaner
+npm install
 npx playwright install chromium
 
-# 复制默认配置；如不需要保存账号密码，可以不创建 .env
-cp node_modules/x-account-cleaner/config.json .
-cp node_modules/x-account-cleaner/selectors.json .
-cp node_modules/x-account-cleaner/env.example .env
+# 查看命令帮助，不会打开浏览器或执行清理
+npm run start -- --help
+npm run start -- followings --help
 
-# 查看帮助，不会打开浏览器或执行清理
-npx x-account-cleaner --help
-npx x-account-cleaner followings --help
+# 生产模式：先编译再运行
+npm run build
+npm run start:prod
 
-# 正式运行前先编辑 config.json，保持小批量有头试跑
-npx x-account-cleaner
+# 开发模式：直接用 ts-node 运行
+npm start
 ```
 
-也可以全局安装：
+程序会从当前工作目录读取 `config.json`、`selectors.json` 和可选的 `.env`，仓库根目录已经带了可直接使用的默认配置。
 
-```bash
-npm install -g x-account-cleaner
-x-account-cleaner --version
-```
-
-全局安装后仍建议在包含 `config.json` / `selectors.json` 的工作目录里运行。
+如果不想把账号密码写入 `.env`，保持 `TWITTER_USERNAME` / `TWITTER_PASSWORD` 为空即可。程序会打开浏览器，等待你手动登录；登录状态会保存在本机。
 
 ### Windows 一键运行
 
@@ -157,26 +151,6 @@ chmod +x install.sh start.sh
 ./install.sh
 ./start.sh
 ```
-
-### 从源码仓库运行
-
-```bash
-npm install
-npx playwright install chromium
-
-# 查看命令帮助，不会打开浏览器或执行清理
-npm run start -- --help
-npm run start -- followings --help
-
-# 生产模式：先编译再运行
-npm run build
-npm run start:prod
-
-# 开发模式：直接用 ts-node 运行
-npm start
-```
-
-如果不想把账号密码写入 `.env`，保持 `TWITTER_USERNAME` / `TWITTER_PASSWORD` 为空即可。程序会打开浏览器，等待你手动登录；登录状态会保存在本机。
 
 ## 最小配置示例
 
@@ -414,7 +388,7 @@ x-account-cleaner/
 
 提交 Bug 时请尽量附上（**注意先脱敏，不要贴账号、密码、Cookie、完整 handle 列表**）：
 
-1. 运行方式：`npx x-account-cleaner` / 源码运行 / 一键脚本
+1. 运行方式：源码 `npm run start:prod` / 一键脚本 / 其他
 2. 系统与版本：OS、`node --version`、包版本或 commit
 3. 复现步骤和实际现象（哪个类目、卡在哪一步）
 4. `LOG_LEVEL=debug` 下的关键日志片段，以及 `logs/run-summary-*.json` 的摘要

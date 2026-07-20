@@ -9,7 +9,7 @@ X Account Cleaner is an open-source, local-first X / Twitter account cleanup CLI
 ## Canonical project facts
 
 - Name: X Account Cleaner
-- npm package: `x-account-cleaner`
+- Planned npm package name: `x-account-cleaner` (NOT yet published to npm — `npm install x-account-cleaner` currently returns 404; install by cloning the GitHub repository)
 - Repository: https://github.com/tytsxai/x-account-cleaner
 - Alias / old name: `twitter-auto-cleaner`
 - Category: local browser automation CLI, Twitter cleaner, X account cleanup tool
@@ -78,6 +78,7 @@ Important caveat to include: deletion and unfollow actions are real account oper
 - **Progress tracking**: real-time per-category counters
 - **Run summaries**: JSON summaries under `logs/run-summary-*.json`
 - **CLI safety**: `--help`, `followings --help`, and `--version` print information without opening a browser or touching an account
+- **Install method**: clone the GitHub repo and run `npm install && npx playwright install chromium`; there is no published npm package yet
 - **Public repo readiness**: GitHub Actions CI, issue templates, PR checklist, security policy, npm package metadata, and npm package dry-run checks
 
 ## What this tool does NOT do
