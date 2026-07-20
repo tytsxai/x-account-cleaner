@@ -422,11 +422,13 @@ x-account-cleaner/
 
 贡献流程、代码风格和提交前检查见 [CONTRIBUTING.md](CONTRIBUTING.md)。提交 PR 前请先跑 `npm run verify`。
 
-## GitHub Topics 建议
+## GitHub Topics
 
-如果你维护这个仓库，可以在 GitHub repository topics 中加入：
+本仓库当前已设置的 topics（GitHub 上限 20 个）：
 
-`x` · `twitter` · `twitter-cleaner` · `x-account-cleaner` · `x-account-cleanup-tool` · `account-cleaner` · `tweet-cleaner` · `twitter-delete-tool` · `bulk-delete-tweets` · `bulk-unlike` · `unlike-tweets` · `bulk-unfollow` · `twitter-bookmark-cleaner` · `social-media-cleanup` · `playwright` · `typescript` · `browser-automation` · `local-first` · `privacy-tool`
+`x` · `twitter` · `x-account-cleaner` · `x-account-cleanup-tool` · `twitter-cleaner` · `twitter-auto-cleaner` · `tweet-cleaner` · `account-cleanup` · `delete-tweets` · `bulk-delete-tweets` · `bulk-unlike` · `bulk-unfollow` · `bookmark-cleaner` · `social-media-cleanup` · `privacy-tool` · `local-first` · `browser-automation` · `playwright` · `typescript` · `nodejs`
+
+如果你 fork 了本项目，可以直接复用这组 topics；更完整的关键词列表见 [package.json](package.json) 的 `keywords` 字段。
 
 ## 免责声明 / Disclaimer
 
