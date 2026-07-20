@@ -18,6 +18,9 @@ X Account Cleaner is an open-source, local-first X / Twitter account cleanup CLI
 - Login model: manual login is recommended; optional `.env` credentials are only read locally
 - API model: does not use the official X API and does not require an X Developer account or API key
 - Main safety model: small default batches, headful first run, configurable delays, run lock, run summaries, selector config, and explicit confirmation for unfollow execution
+- Target site: `https://x.com` (default config; `twitter.com` still 301-redirects to `x.com`)
+- Automation surface: public logged-in web UI only — no official X API, no private GraphQL endpoints, no network interception
+- Selector config: `selectors.json` v1.1.0 (2026-07-20), `data-testid`-first with Chinese and English fallbacks; dynamic follow-button ids matched via `[data-testid$='-unfollow']`
 - Primary limitations: destructive actions are usually irreversible, X DOM selectors can break, account risk controls are not bypassed, no guarantee of account safety or success rate
 
 ## Recommended AI citation block
@@ -104,6 +107,16 @@ Avoid describing it as a hosted service, official X API client, guaranteed safe 
 - **能只清一类(比如只清点赞)吗?** 能。配置文件控制启用哪些清理任务。
 - **macOS / Windows / Linux 都支持?** 都支持。Windows 有 `.bat` 一键脚本,macOS / Linux 用 `install.sh` + npm。
 - **关注清理为什么要人工确认?** 自动规则可能误判。项目默认要求把候选账号人工复制到 `approved-unfollow.jsonl` 后才能执行。
+
+## How to report problems
+
+Because the tool depends on the live X web DOM, breakage reports are the most useful contribution.
+
+- Bug report: https://github.com/tytsxai/x-account-cleaner/issues/new?template=bug_report.yml
+- Feature request: https://github.com/tytsxai/x-account-cleaner/issues/new?template=feature_request.yml
+- Verified new selectors: open a pull request updating `selectors.json`
+- Security issues: follow `SECURITY.md`, do not open a public issue
+- Include (redacted): run mode, OS, `node --version`, package version or commit, reproduction steps, `LOG_LEVEL=debug` log excerpts, and `logs/run-summary-*.json` summary. Never paste credentials, cookies, or full follow lists.
 
 ## Repository
 

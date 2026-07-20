@@ -6,6 +6,18 @@
 
 ## [未发布]
 
+### 修复
+
+- 修正关注按钮选择器：X 的关注按钮 `data-testid` 形如 `<userId>-unfollow` / `<userId>-follow`，原先的 `[data-testid*='following']` 匹配不到任何元素，改为后缀匹配 `[data-testid$='-unfollow']`（此前依赖代码内的硬编码回退才能工作）。
+
+### 变更
+
+- 默认站点域名由 `twitter.com` 改为 `x.com`（`config.json`、`config.test.json`、`src/core/login.ts`），减少一次 301 跳转。
+- `selectors.json` 升级到 `1.1.0`：优先使用与界面语言无关的 `data-testid`（例如"更多"按钮改用 `[data-testid='caret']` 作为 primary），并为删除、移除书签、取关、登录等按钮补充中文 + 英文备用选择器。
+- 书签清理先尝试推文操作栏内的 `[data-testid='removeBookmark']`，找不到再回退到"更多"菜单路径，减少一次点击和菜单等待。
+- 文档明确说明 `primary` + `fallback` 会被合并成一条逗号分隔列表，命中顺序由 DOM 位置决定而非书写顺序，备用选择器不得匹配语义不同的按钮。
+- README 新增"页面兼容性"和"报告问题与参与共建"章节；`llms.txt` 补充域名、自动化边界和问题反馈入口。
+
 ### 计划添加
 
 - 按日期范围过滤删除。

@@ -2,13 +2,13 @@
 
 ## 📋 概述
 
-当 Twitter 更新页面结构导致功能失效时，你只需要更新 `selectors.json` 文件即可，无需修改代码。
+当 X（原 Twitter）更新页面结构导致功能失效时，你只需要更新 `selectors.json` 文件即可，无需修改代码。
 
 ## 🎯 为什么需要这个配置文件？
 
-Twitter 经常更新其网页结构，这会导致原有的元素选择器失效。通过将选择器配置独立出来，你可以：
+X 会持续调整其网页结构，这会导致原有的元素选择器失效。通过将选择器配置独立出来，你可以：
 
-- ✅ 快速应对 Twitter 页面结构变化
+- ✅ 快速应对 X 页面结构变化
 - ✅ 无需修改代码即可更新选择器
 - ✅ 支持主选择器和备用选择器
 - ✅ 便于测试和调试
@@ -43,7 +43,7 @@ x-account-cleaner/
 ### 方法一：使用浏览器开发者工具（推荐）
 
 #### 步骤 1：打开开发者工具
-1. 打开 Twitter 网站：https://twitter.com
+1. 打开 X 网站：https://x.com （twitter.com 会 301 跳转到 x.com）
 2. 登录你的账号
 3. 按 `F12` 打开开发者工具（或右键 → 检查）
 
@@ -112,7 +112,7 @@ document.querySelector('[data-testid="tweet"]')
 
 ```bash
 # 启动 Playwright Inspector
-npx playwright codegen https://twitter.com
+npx playwright codegen https://x.com
 ```
 
 这会打开一个浏览器窗口和调试工具，可以直接生成选择器。
@@ -140,8 +140,8 @@ npx playwright codegen https://twitter.com
 {
   "selectors": {
     "tweetMoreButton": {
-      "primary": "[aria-label*='更多'][role='button']",
-      "fallback": "[data-testid='caret']",
+      "primary": "[data-testid='caret']",
+      "fallback": "[aria-label*='更多'][role='button'], [aria-label='More'][role='button']",
       "description": "推文的'更多'按钮（三个点图标）"
     }
   }
@@ -150,12 +150,26 @@ npx playwright codegen https://twitter.com
 
 ### 主选择器 vs 备用选择器
 
-- **primary**：首选选择器，优先使用
-- **fallback**：备用选择器，当主选择器失效时使用
+- **primary**：首选选择器，通常写与界面语言无关的 `data-testid`
+- **fallback**：备用选择器，可以写多个，用逗号分隔（例如同时覆盖中文和英文界面）
 
-程序会自动合并两个选择器：`primary, fallback`
+程序在加载时会把两者合并成一条列表：`primary, fallback`，然后交给 Playwright 查找。
 
-Playwright 会依次尝试，直到找到匹配的元素。
+> ⚠️ **重要：合并后的列表按 DOM 顺序命中，不是按书写顺序优先。**
+> 也就是说，如果 fallback 匹配到的元素在页面里出现得更靠前，它会先被选中。
+> 因此 fallback **必须与 primary 语义完全一致**，绝不能匹配到功能不同的按钮。
+> 反例：给 `unretweet` 加上 `[aria-label*='Repost']`，会命中"转推"按钮本身，导致误转推而不是撤销转推。
+
+### 界面语言的影响
+
+`data-testid` 与界面语言无关，最稳定；`aria-label` 和 `:has-text()` 会随 X 的界面语言变化。
+本项目默认对删除、取消关注等关键按钮同时提供中文和英文备用值。如果你的 X 界面是其他语言，
+建议在 `fallback` 里追加对应语言的文案，或干脆把界面语言切换到中文 / 英文再运行。
+
+### 动态 data-testid
+
+X 的关注按钮 testid 里带账号 ID，形如 `1234567890-unfollow`（已关注）/ `1234567890-follow`（未关注）。
+这类选择器必须用后缀匹配 `[data-testid$='-unfollow']`，不能写成 `[data-testid*='following']`（匹配不到任何元素）。
 
 ## 🔍 常见选择器更新场景
 
@@ -166,7 +180,7 @@ Playwright 会依次尝试，直到找到匹配的元素。
 **可能原因：** `tweetMoreButton` 或 `deleteButton` 选择器失效
 
 **解决步骤：**
-1. 打开 Twitter，找到任意一条你的推文
+1. 打开 x.com，找到任意一条你的推文
 2. 使用开发者工具定位"更多"按钮（三个点图标）
 3. 查找 `data-testid` 或 `aria-label` 属性
 4. 更新 `selectors.json` 中的 `tweetMoreButton`
@@ -179,7 +193,7 @@ Playwright 会依次尝试，直到找到匹配的元素。
 **更新选择器：** `unretweet` 和 `unretweetConfirm`
 
 **测试方法：**
-1. 打开你的 Twitter 主页
+1. 打开你的 X 个人主页
 2. 找到一条你转推的内容
 3. 定位"取消转推"按钮
 4. 更新选择器配置
@@ -189,7 +203,7 @@ Playwright 会依次尝试，直到找到匹配的元素。
 **更新选择器：** `unlikeButton`
 
 **测试方法：**
-1. 打开"喜欢"页面（https://twitter.com/你的用户名/likes）
+1. 打开"喜欢"页面（https://x.com/你的用户名/likes）
 2. 定位"取消喜欢"按钮（红心图标）
 3. 更新选择器配置
 
@@ -296,9 +310,13 @@ await page.locator('[data-testid="tweet"]').first().click()
 | `unretweetConfirm` | 确认取消转推 | ⭐⭐⭐⭐ |
 | `unlikeButton` | 取消点赞按钮 | ⭐⭐⭐⭐ |
 | `removeBookmarkButton` | 删除书签按钮 | ⭐⭐⭐ |
-| `followingButton` | 正在关注按钮 | ⭐⭐⭐ |
+| `followingButton` | 正在关注按钮（`[data-testid$='-unfollow']`） | ⭐⭐⭐ |
+| `unfollowButton` | 取消关注按钮 | ⭐⭐⭐ |
 | `unfollowConfirm` | 确认取消关注 | ⭐⭐⭐ |
 | `userCell` | 用户卡片 | ⭐⭐⭐ |
+| `likeButton` / `bookmarkButton` | 点赞 / 书签按钮（状态判断用） | ⭐⭐ |
+| `loginUsernameInput` / `loginPasswordInput` / `loginNextButton` / `loginButton` | 自动登录流程 | ⭐⭐ |
+| `profileLink` | 已登录判断信号之一 | ⭐⭐ |
 
 ## 🤝 共享你的配置
 
@@ -316,7 +334,7 @@ await page.locator('[data-testid="tweet"]').first().click()
 **A：** 将日志级别设为 `debug`，运行程序后查看日志输出，会显示具体哪个元素查找失败。
 
 ### Q3：备用选择器什么时候生效？
-**A：** Playwright 会同时尝试主选择器和备用选择器（合并为 `primary, fallback`），只要其中一个能找到元素就会成功。
+**A：** 程序把主选择器和备用选择器合并成 `primary, fallback` 一条列表交给 Playwright，只要其中一个能找到元素就会成功。注意命中顺序取决于元素在 DOM 中的位置，而不是你写的先后顺序，所以备用选择器不能匹配语义不同的按钮。
 
 ### Q4：可以添加自定义选择器吗？
 **A：** 可以！在 `selectors.json` 的 `customSelectors` 部分添加即可。

@@ -276,9 +276,9 @@ sudo apt-get install -y \
 
 ## 选择器更新
 
-### Twitter 页面结构变化
+### X 页面结构变化
 
-如果 Twitter 更新了页面结构，需要更新选择器。
+如果 X（原 Twitter）更新了页面结构，需要更新选择器。优先修改 `selectors.json`（它的优先级高于 `config.json` 里的 `selectors`），改完运行 `npm run test:selectors` 校验格式。
 
 **步骤**：
 
@@ -287,7 +287,7 @@ sudo apt-get install -y \
    - 使用元素选择器（Ctrl + Shift + C）
    - 找到对应元素的选择器
 
-2. **更新 config.json**
+2. **更新 selectors.json（推荐）或 config.json**
    ```json
    {
      "selectors": {
@@ -381,6 +381,16 @@ sudo apt-get install -y \
 ---
 
 **提示**：大多数问题可以通过查看日志文件找到原因。
+
+## 还是没解决？欢迎反馈
+
+X 的网页端会持续变化，本工具依赖页面 DOM，出问题很正常。请把问题反馈回来，帮助其他用户：
+
+- 功能失效 / 报错：[提交 Bug report](https://github.com/tytsxai/x-account-cleaner/issues/new?template=bug_report.yml)
+- 你验证可用的新选择器：欢迎直接发 PR 更新 `selectors.json`
+- 安全问题：请按 [SECURITY.md](../SECURITY.md) 私下报告
+
+反馈时请附上运行方式、OS、`node --version`、复现步骤、`LOG_LEVEL=debug` 的关键日志和 `logs/run-summary-*.json` 摘要，并**先脱敏**（不要贴账号、密码、Cookie 或完整关注列表）。
 
 
 

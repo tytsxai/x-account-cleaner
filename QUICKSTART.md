@@ -158,6 +158,12 @@ npm run start:prod
 **Q: 想停止删除？**
 - 按 `Ctrl + C`
 
+## 遇到问题？
+
+- 先看 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。
+- 按钮找不到、点击无反应，通常是 X 页面结构变化导致选择器过期，见 [docs/SELECTOR_UPDATE_GUIDE.md](docs/SELECTOR_UPDATE_GUIDE.md)。
+- 仍未解决，欢迎[提交 Issue](https://github.com/tytsxai/x-account-cleaner/issues/new?template=bug_report.yml)；附上 OS、`node --version`、复现步骤和脱敏后的 `LOG_LEVEL=debug` 日志即可。你验证可用的新选择器也非常欢迎直接发 PR。
+
 ## 下一步
 
 - 阅读 [README.md](README.md) 了解详细功能。

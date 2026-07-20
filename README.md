@@ -75,7 +75,7 @@
 
 很多用户在注销、转让、停用或重新整理 X / Twitter 账号前，需要批量清理历史内容。但 X 网页端没有提供完整的一键清理入口，官方 API 又有权限、费用和限制。本项目选择更直接的本地浏览器自动化路线：
 
-- 使用你自己的登录会话打开 `x.com` / `twitter.com` 页面。
+- 使用你自己的登录会话打开 `x.com` 页面（`twitter.com` 会 301 跳转到 `x.com`，默认配置已直接使用 `x.com`）。
 - 根据 `config.json` 决定要清理哪些内容类型。
 - 通过选择器识别推文、回复、转推、点赞、书签和关注列表。
 - 按批次、延迟、重试和运行上限执行，降低误操作和触发风控的概率。
@@ -270,6 +270,23 @@ npm run start -- followings resume --run-id <runId>
 - 当前不处理私信、列表、社群、粉丝移除和 X 付费功能。
 - 使用者需要自行确认使用方式符合 X 服务条款和所在地法律法规。
 
+## 页面兼容性 / X Web UI Compatibility
+
+X 的网页端一直在变，这类工具的维护重点就是"跟上 DOM 变化"。当前版本的兼容性口径：
+
+| 项 | 当前状态 |
+|---|---|
+| 站点域名 | 默认使用 `https://x.com`；`twitter.com` 仍会 301 跳转，但直连 `x.com` 少一次重定向 |
+| 元素定位方式 | 优先 `data-testid`（与界面语言无关），其次 `aria-label` / 文本，最后才是结构选择器 |
+| 界面语言 | 关键按钮同时提供中文、英文备用选择器；其他语言界面建议自行在 `selectors.json` 追加 fallback |
+| 关注按钮 | X 的关注按钮 testid 形如 `<userId>-unfollow` / `<userId>-follow`，项目使用后缀匹配 `[data-testid$='-unfollow']` |
+| 书签移除 | 先尝试推文操作栏内的 `[data-testid='removeBookmark']`，找不到再走"更多"菜单 |
+| 官方 API | 不使用，也不依赖任何私有 GraphQL 接口 |
+
+选择器全部集中在 [selectors.json](selectors.json)，改配置不用改代码，也不用重新编译。
+
+> 注意：`primary` 和 `fallback` 会被合并成一条逗号分隔的选择器列表，命中顺序由元素在 DOM 中的位置决定，不是由书写顺序决定。因此备用选择器必须和主选择器语义完全一致，否则可能点到功能不同的按钮。
+
 ## 选择器失效时怎么办
 
 如果程序突然找不到按钮、计数不动、点击失败或页面流程卡住，通常是 X 页面结构变化导致选择器过期。
@@ -370,9 +387,40 @@ x-account-cleaner/
 
 常见原因是选择器过期、页面加载慢、登录状态失效、账号进入验证页，或对应内容类型本来为空。请查看 `logs/`、提高 `pageRefreshDelay`，并参考 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。
 
+### 用 x.com 还是 twitter.com？
+
+默认配置已全部改为 `x.com`。`twitter.com` 目前仍会 301 跳转到 `x.com`，但直连可以少一次重定向，登录流程也更稳。如果你有特殊需要，改 `config.json` 的 `urls` 即可。
+
+### 浏览器界面是英文/其他语言会影响吗？
+
+关键按钮优先使用与语言无关的 `data-testid`，删除、取关等按钮还额外提供了中英文备用选择器，所以中文和英文界面都可用。其他语言界面如果出现找不到按钮，可以在 `selectors.json` 的 `fallback` 里追加该语言的文案，或用 `BROWSER_LOCALE=zh-CN` / `en-US` 统一界面语言。
+
+### 会用到 X 的私有 GraphQL 接口吗？
+
+不会。项目只做网页端 UI 自动化：打开页面、找元素、点击、确认。不构造 API 请求，也不携带内部 token 调接口。
+
 ### 能不能全自动大规模取关？
 
 不建议。关注管理默认要求导出、筛选、人工确认和 dry-run，最终只执行确认名单。这样更慢，但更能避免误伤。
+
+## 报告问题与参与共建 / Reporting Issues & Contributing
+
+这是一个依赖 X 前端 DOM 的开源工具，**页面一改就可能失效，所以非常欢迎你把遇到的问题反馈回来**。哪怕只是"某个按钮点不动了"，对其他用户也很有价值。
+
+- 🐛 功能失效、报错、行为异常：提交 [Bug report](https://github.com/tytsxai/x-account-cleaner/issues/new?template=bug_report.yml)
+- 💡 功能建议、使用场景讨论：提交 [Feature request](https://github.com/tytsxai/x-account-cleaner/issues/new?template=feature_request.yml)
+- 🔧 你自己验证可用的新选择器：直接发 PR 更新 [selectors.json](selectors.json)，这是最受欢迎的贡献类型
+- 🔐 安全问题：请按 [SECURITY.md](SECURITY.md) 私下报告，不要开公开 Issue
+
+提交 Bug 时请尽量附上（**注意先脱敏，不要贴账号、密码、Cookie、完整 handle 列表**）：
+
+1. 运行方式：`npx x-account-cleaner` / 源码运行 / 一键脚本
+2. 系统与版本：OS、`node --version`、包版本或 commit
+3. 复现步骤和实际现象（哪个类目、卡在哪一步）
+4. `LOG_LEVEL=debug` 下的关键日志片段，以及 `logs/run-summary-*.json` 的摘要
+5. 如果是选择器问题：在浏览器 Console 里用 `document.querySelector('...')` 的验证结果
+
+贡献流程、代码风格和提交前检查见 [CONTRIBUTING.md](CONTRIBUTING.md)。提交 PR 前请先跑 `npm run verify`。
 
 ## GitHub Topics 建议
 
