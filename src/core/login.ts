@@ -8,8 +8,10 @@ import { LoginResult } from '../types';
 
 type ManualLoginState = 'logged_in' | 'verification' | 'login_flow' | 'pending';
 
-const LOGIN_URL = 'https://twitter.com/i/flow/login';
-const HOME_URL = 'https://twitter.com/home';
+// x.com 是当前的规范域名，twitter.com 仍会 301 到 x.com。
+// 直接使用 x.com 可以少一次跳转，也避免登录流程在跨域重定向中丢失状态。
+const LOGIN_URL = 'https://x.com/i/flow/login';
+const HOME_URL = 'https://x.com/home';
 
 const AUTHENTICATED_DOM_SELECTORS = [
   '[data-testid="AppTabBar_Profile_Link"]',

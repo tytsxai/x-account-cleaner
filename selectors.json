@@ -1,37 +1,39 @@
 {
-    "version": "1.0.0",
-    "lastUpdated": "2025-10-05",
-    "description": "Twitter 页面元素选择器配置文件 - 当 Twitter 更新页面结构时，只需修改此文件即可",
+    "version": "1.1.0",
+    "lastUpdated": "2026-07-20",
+    "description": "X (Twitter) 网页端元素选择器配置 - 当 X 更新页面结构时，只需修改此文件即可，无需改动源码",
     "tips": {
         "howToUpdate": "如果功能失效，请使用浏览器开发者工具（F12）检查元素，找到新的选择器并更新此文件",
         "testingTools": "推荐使用 Chrome DevTools 的 Console 面板，使用 document.querySelector() 测试选择器是否有效",
-        "fallbackSelectors": "支持多个备用选择器，用逗号分隔，程序会依次尝试"
+        "fallbackSelectors": "支持多个备用选择器，用逗号分隔，程序会依次尝试",
+        "mergeBehavior": "程序会把 primary 和 fallback 合并成一条逗号分隔的选择器列表。这类列表按 DOM 顺序命中，不是按书写顺序优先，所以 fallback 绝不能匹配到语义不同的按钮（例如不要用 [aria-label*='Repost'] 作为“撤销转推”的备用选择器，它会命中转推按钮本身）。",
+        "languageNeutral": "优先使用 data-testid（与界面语言无关）。aria-label 和文本选择器会随界面语言变化，本文件对常用按钮同时提供了中文和英文备用值。"
     },
     "selectors": {
         "tweet": {
             "primary": "[data-testid='tweet']",
-            "fallback": "article[role='article']",
-            "description": "推文容器元素"
+            "fallback": "article[data-testid='tweet'], article[role='article']",
+            "description": "推文（Post）容器元素"
         },
         "tweetMoreButton": {
-            "primary": "[aria-label*='更多'][role='button']",
-            "fallback": "[data-testid='caret']",
-            "description": "推文的更多操作按钮（三个点图标）"
+            "primary": "[data-testid='caret']",
+            "fallback": "[aria-label*='更多'][role='button'], [aria-label='More'][role='button']",
+            "description": "推文的更多操作按钮（三个点图标）。data-testid='caret' 与界面语言无关，优先使用"
         },
         "deleteButton": {
             "primary": "[role='menuitem'][data-testid*='delete']",
-            "fallback": "[role='menuitem']:has-text('删除')",
-            "description": "下拉菜单中的删除按钮"
+            "fallback": "[data-testid='Dropdown'] [role='menuitem']:has-text('删除'), [data-testid='Dropdown'] [role='menuitem']:has-text('Delete'), [role='menuitem']:has-text('删除'), [role='menuitem']:has-text('Delete')",
+            "description": "下拉菜单中的删除菜单项。X 当前没有为该菜单项提供稳定的 data-testid，实际多由文本备用选择器命中"
         },
         "confirmDeleteButton": {
             "primary": "[data-testid='confirmationSheetConfirm']",
-            "fallback": "[data-testid*='confirm']",
+            "fallback": "[data-testid='confirmationSheetDialog'] [role='button'][data-testid*='onfirm'], [data-testid*='confirm']",
             "description": "确认删除的对话框按钮"
         },
         "unretweet": {
             "primary": "[data-testid='unretweet']",
-            "fallback": "[aria-label*='撤销转推']",
-            "description": "取消转推按钮"
+            "fallback": "[aria-label*='撤销转推'], [aria-label*='Undo repost'], [aria-label*='Undo Repost']",
+            "description": "取消转推 / 撤销转发按钮。注意不要把 [aria-label*='Repost'] 加进来，它会命中“转推”按钮本身"
         },
         "unretweetConfirm": {
             "primary": "[data-testid='unretweetConfirm']",
@@ -40,42 +42,42 @@
         },
         "likeButton": {
             "primary": "[data-testid='like']",
-            "fallback": "[aria-label*='喜欢']",
-            "description": "点赞按钮"
+            "fallback": "[aria-label*='喜欢'], [aria-label*='Like']",
+            "description": "点赞按钮（未点赞状态）"
         },
         "unlikeButton": {
             "primary": "[data-testid='unlike']",
-            "fallback": "[aria-label*='取消喜欢']",
-            "description": "取消点赞按钮"
+            "fallback": "[aria-label*='取消喜欢'], [aria-label*='Unlike']",
+            "description": "取消点赞按钮（已点赞状态）"
         },
         "bookmarkButton": {
             "primary": "[data-testid='bookmark']",
-            "fallback": "[aria-label*='书签']",
+            "fallback": "[aria-label*='书签'], [aria-label*='Bookmark']",
             "description": "添加书签按钮"
         },
         "removeBookmarkButton": {
             "primary": "[data-testid='removeBookmark']",
-            "fallback": "[aria-label*='移除书签']",
-            "description": "移除书签按钮"
+            "fallback": "[role='menuitem']:has-text('移除书签'), [role='menuitem']:has-text('Remove from Bookmarks'), [aria-label*='移除书签'], [aria-label*='Remove from Bookmarks']",
+            "description": "移除书签按钮 / 菜单项。书签页的推文操作栏和更多菜单里都可能出现"
         },
         "followingButton": {
-            "primary": "[data-testid*='following']",
-            "fallback": "[aria-label*='正在关注']",
-            "description": "正在关注按钮"
+            "primary": "[data-testid$='-unfollow']",
+            "fallback": "[data-testid*='unfollow'], [aria-label^='正在关注'], [aria-label*='Following @']",
+            "description": "关注列表中的“正在关注”按钮。X 的实际 testid 形如 <userId>-unfollow（已关注）/ <userId>-follow（未关注），因此必须用后缀匹配，不能用 [data-testid*='following']"
         },
         "unfollowButton": {
-            "primary": "[data-testid*='unfollow']",
-            "fallback": "[aria-label*='取消关注']",
+            "primary": "[data-testid$='-unfollow']",
+            "fallback": "[data-testid*='unfollow'], [aria-label*='取消关注'], [aria-label*='Unfollow']",
             "description": "取消关注按钮"
         },
         "unfollowConfirm": {
             "primary": "[data-testid='confirmationSheetConfirm']",
-            "fallback": "[role='button']:has-text('取消关注')",
+            "fallback": "[role='button']:has-text('取消关注'), [role='button']:has-text('Unfollow')",
             "description": "确认取消关注按钮"
         },
         "userCell": {
             "primary": "[data-testid='UserCell']",
-            "fallback": "[data-testid*='user-cell']",
+            "fallback": "[data-testid='cellInnerDiv'] [data-testid='UserCell'], [data-testid*='user-cell']",
             "description": "关注列表中的用户卡片"
         },
         "loginUsernameInput": {
@@ -85,23 +87,23 @@
         },
         "loginPasswordInput": {
             "primary": "input[name='password']",
-            "fallback": "input[type='password']",
+            "fallback": "input[type='password'], input[autocomplete='current-password']",
             "description": "登录页面的密码输入框"
         },
         "loginNextButton": {
             "primary": "[role='button']:has-text('下一步')",
-            "fallback": "button:has-text('Next')",
+            "fallback": "[role='button']:has-text('Next'), [data-testid='ocfEnterTextNextButton']",
             "description": "登录流程的下一步按钮"
         },
         "loginButton": {
             "primary": "[role='button'][data-testid='LoginForm_Login_Button']",
-            "fallback": "button:has-text('登录')",
+            "fallback": "[role='button']:has-text('登录'), [role='button']:has-text('Log in')",
             "description": "登录按钮"
         },
         "profileLink": {
             "primary": "a[data-testid='AppTabBar_Profile_Link']",
-            "fallback": "a[href*='/home']",
-            "description": "导航栏的个人资料链接"
+            "fallback": "[data-testid='SideNav_AccountSwitcher_Button'], a[href*='/home']",
+            "description": "导航栏的个人资料链接（同时作为“已登录”的判断信号之一）"
         }
     },
     "customSelectors": {},
@@ -119,55 +121,63 @@
         "description": "常用的选择器模式参考",
         "patterns": [
             {
-                "name": "data-testid",
+                "name": "data-testid（精确匹配）",
                 "example": "[data-testid='tweet']",
                 "reliability": "高",
-                "note": "Twitter 官方测试 ID，相对稳定"
+                "note": "X 官方测试 ID，与界面语言无关，最稳定"
+            },
+            {
+                "name": "data-testid（后缀匹配）",
+                "example": "[data-testid$='-unfollow']",
+                "reliability": "高",
+                "note": "用于形如 <userId>-unfollow 的动态 testid"
             },
             {
                 "name": "aria-label",
                 "example": "[aria-label='更多']",
                 "reliability": "中",
-                "note": "无障碍标签，可能随语言变化"
+                "note": "无障碍标签，随界面语言变化，建议中英文都写"
             },
             {
                 "name": "role",
                 "example": "[role='button']",
                 "reliability": "中",
-                "note": "HTML 角色属性，相对通用"
+                "note": "HTML 角色属性，相对通用，但匹配范围过宽"
             },
             {
                 "name": "class",
                 "example": ".css-1dbjc4n",
                 "reliability": "低",
-                "note": "CSS 类名可能随时变化，不推荐"
+                "note": "X 使用运行时生成的 CSS 类名，随时可能变化，不推荐"
             },
             {
                 "name": "text",
                 "example": ":has-text('删除')",
                 "reliability": "低",
-                "note": "依赖文本内容，受语言影响"
+                "note": "依赖文本内容，受界面语言影响；属于 Playwright 扩展语法，仅在本项目运行时有效"
             }
         ]
     },
     "updateGuide": {
         "steps": [
-            "1. 打开 Twitter 网站并登录",
+            "1. 打开 https://x.com 并登录",
             "2. 按 F12 打开开发者工具",
-            "3. 点击左上角的元素选择工具（或按 Ctrl+Shift+C）",
+            "3. 点击左上角的元素选择工具（或按 Ctrl+Shift+C / Cmd+Shift+C）",
             "4. 点击你要操作的按钮或元素",
             "5. 在 Elements 面板中查看元素的属性",
-            "6. 优先查找 data-testid 属性",
+            "6. 优先查找 data-testid；如果 testid 含账号 ID 等动态片段，用 $= 后缀匹配",
             "7. 在 Console 面板测试选择器：document.querySelector('[data-testid=\"your-selector\"]')",
             "8. 如果返回元素，说明选择器有效",
-            "9. 更新此文件中对应的选择器",
-            "10. 重新运行程序测试"
+            "9. 更新此文件中对应的选择器，并确认新增 fallback 不会命中语义不同的按钮",
+            "10. 运行 npm run test:selectors 校验格式，再用小批量配置试跑",
+            "11. 如果你验证出了新的可用选择器，欢迎提 Issue 或 PR 回馈给项目"
         ],
         "exampleScenarios": {
             "推文删除按钮失效": "检查 tweetMoreButton 和 deleteButton 选择器",
             "无法取消转推": "检查 unretweet 和 unretweetConfirm 选择器",
             "点赞功能异常": "检查 unlikeButton 选择器",
-            "关注列表无法加载": "检查 userCell 和 followingButton 选择器"
+            "关注列表无法加载": "检查 userCell 和 followingButton 选择器",
+            "取关点击无反应": "检查 followingButton（应为 [data-testid$='-unfollow']）和 unfollowConfirm 选择器"
         }
     }
 }

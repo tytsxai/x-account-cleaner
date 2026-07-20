@@ -22,29 +22,29 @@
     "exponentialBackoff": true
   },
   "selectors": {
-    "tweetMoreButton": "[aria-label*='更多'][role='button'], [data-testid='caret']",
-    "deleteButton": "[role='menuitem'][data-testid*='delete'], [role='menuitem']:has-text('删除')",
+    "tweetMoreButton": "[data-testid='caret'], [aria-label*='更多'][role='button'], [aria-label='More'][role='button']",
+    "deleteButton": "[role='menuitem'][data-testid*='delete'], [role='menuitem']:has-text('删除'), [role='menuitem']:has-text('Delete')",
     "confirmDeleteButton": "[data-testid='confirmationSheetConfirm']",
-    "tweet": "[data-testid='tweet']",
+    "tweet": "[data-testid='tweet'], article[role='article']",
     "unretweet": "[data-testid='unretweet']",
-    "unretweetConfirm": "[data-testid='unretweetConfirm']",
+    "unretweetConfirm": "[data-testid='unretweetConfirm'], [data-testid='confirmationSheetConfirm']",
     "likeButton": "[data-testid='like']",
     "unlikeButton": "[data-testid='unlike']",
     "bookmarkButton": "[data-testid='bookmark']",
     "removeBookmarkButton": "[data-testid='removeBookmark']",
-    "followingButton": "[data-testid*='following']",
-    "unfollowButton": "[data-testid*='unfollow']",
+    "followingButton": "[data-testid$='-unfollow'], [data-testid*='unfollow']",
+    "unfollowButton": "[data-testid$='-unfollow'], [data-testid*='unfollow']",
     "unfollowConfirm": "[data-testid='confirmationSheetConfirm']"
   },
   "urls": {
-    "login": "https://twitter.com/i/flow/login",
-    "profile": "https://twitter.com/home",
-    "tweets": "https://twitter.com/{username}",
-    "tweetsWithReplies": "https://twitter.com/{username}/with_replies",
-    "media": "https://twitter.com/{username}/media",
-    "likes": "https://twitter.com/{username}/likes",
-    "bookmarks": "https://twitter.com/i/bookmarks",
-    "following": "https://twitter.com/{username}/following"
+    "login": "https://x.com/i/flow/login",
+    "profile": "https://x.com/home",
+    "tweets": "https://x.com/{username}",
+    "tweetsWithReplies": "https://x.com/{username}/with_replies",
+    "media": "https://x.com/{username}/media",
+    "likes": "https://x.com/{username}/likes",
+    "bookmarks": "https://x.com/i/bookmarks",
+    "following": "https://x.com/{username}/following"
   }
 }
 

@@ -309,7 +309,17 @@ export class SelectorHelper {
    */
   async removeBookmark(tweetElement: ElementHandle<Element>): Promise<boolean> {
     try {
-      // 点击更多按钮
+      // 书签页的推文操作栏通常直接带“移除书签”按钮，优先走这条路径，
+      // 不用打开更多菜单，减少一次点击和一次菜单等待。
+      const inlineRemoveButton = await tweetElement.$(this.selectors.removeBookmarkButton);
+      if (inlineRemoveButton) {
+        await inlineRemoveButton.waitForElementState('visible', { timeout: 3000 });
+        await inlineRemoveButton.click();
+        await this.page.waitForTimeout(500);
+        return true;
+      }
+
+      // 回退路径：通过“更多”菜单里的移除书签菜单项
       const moreButton = await tweetElement.$(this.selectors.tweetMoreButton);
       if (!moreButton) {
         return false;
